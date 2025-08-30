@@ -3,6 +3,8 @@ class_name Health
 
 signal health_changed(new_health: int)
 signal died
+signal iframe_started
+signal iframe_ended
 
 @export var max_health: int = 100
 @export var current_health: int = 100
@@ -38,6 +40,7 @@ func take_damage(amount: int, ignore_iframes: bool = false):
 	if not ignore_iframes:
 		is_invulnerable = true
 		iframe_timer.start()
+		iframe_started.emit()  # Signal that iframes have started
 		print("I-frames activated for ", iframe_duration, " seconds")
 	else:
 		print("No i-frames granted (ignored by damage source)")
@@ -48,6 +51,7 @@ func take_damage(amount: int, ignore_iframes: bool = false):
 
 func _on_iframe_timeout():
 	is_invulnerable = false
+	iframe_ended.emit()  # Signal that iframes have ended
 	print("I-frames ended, player can take damage again")
 
 func heal(amount: int):
