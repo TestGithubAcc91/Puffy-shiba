@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=21 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="5_wowpa"]
 [ext_resource type="PackedScene" uid="uid://b2vrnra2k4b62" path="res://Scenes/slime.tscn" id="6_i6g32"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="7_1l0tm"]
+[ext_resource type="Texture2D" uid="uid://5mifn5x6hqap" path="res://Assets/sprites/PlayerGUI/puffyHP4.png" id="9_h4fw4"]
+[ext_resource type="Script" uid="uid://d0c6la3t6odq5" path="res://Scripts/HealthBoxContainer.gd" id="9_ldgsr"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -557,3 +559,34 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("7_1l0tm")
 theme_override_font_sizes/font_size = 8
 text = "John Deer returns....."
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HealthBoxContainer" type="HBoxContainer" parent="UI" node_paths=PackedStringArray("hp_nodes")]
+offset_left = 31.0
+offset_top = 35.0
+offset_right = 203.0
+offset_bottom = 75.0
+scale = Vector2(2, 2)
+script = ExtResource("9_ldgsr")
+hp_nodes = [NodePath("HP1"), NodePath("HP2"), NodePath("HP3"), NodePath("HP4")]
+
+[node name="HP1" type="TextureRect" parent="UI/HealthBoxContainer"]
+layout_mode = 2
+texture = ExtResource("9_h4fw4")
+expand_mode = 2
+
+[node name="HP2" type="TextureRect" parent="UI/HealthBoxContainer"]
+layout_mode = 2
+texture = ExtResource("9_h4fw4")
+expand_mode = 2
+
+[node name="HP3" type="TextureRect" parent="UI/HealthBoxContainer"]
+layout_mode = 2
+texture = ExtResource("9_h4fw4")
+expand_mode = 2
+
+[node name="HP4" type="TextureRect" parent="UI/HealthBoxContainer"]
+layout_mode = 2
+texture = ExtResource("9_h4fw4")
+expand_mode = 2
