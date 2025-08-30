@@ -43,3 +43,22 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 
 	move_and_slide()
+	
+func _ready():
+	# Connect to the health component's died signal
+	$HealthScript.died.connect(_on_player_died)
+
+func _on_player_died():
+	print("Player died! Reloading scene...")
+	# Add the same time scale effect as the original script
+	Engine.time_scale = 0.2
+	
+	# Optional: disable player collision to prevent further interactions
+	$CollisionShape2D.set_deferred("disabled", true)
+	
+	# Wait a moment before reloading (like the original timer)
+	await get_tree().create_timer(1.0).timeout
+	
+	# Reset time scale and reload scene
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()

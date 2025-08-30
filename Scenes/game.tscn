@@ -501,10 +501,12 @@ position = Vector2(173, -7)
 [node name="Coin2" parent="LevelHolder/CoinHolder" instance=ExtResource("4_3dryh")]
 position = Vector2(196, -7)
 
-[node name="Killzone" parent="LevelHolder" instance=ExtResource("5_wowpa")]
-position = Vector2(95, 195)
+[node name="Void" parent="LevelHolder" instance=ExtResource("5_wowpa")]
+position = Vector2(95, 68)
+damage_amount = 100
+ignore_iframes = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/Killzone"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/Void"]
 shape = SubResource("WorldBoundaryShape2D_i6g32")
 
 [node name="PlatformHolder" type="Node" parent="LevelHolder"]
