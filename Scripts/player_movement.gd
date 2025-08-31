@@ -4,7 +4,8 @@ const SPEED = 150.0
 const JUMP_VELOCITY = -200.0
 const HIGH_JUMP_VELOCITY = -350.0
 
-@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var animated_sprite: AnimatedSprite2D = $MainSprite
+@onready var glint_sprite: AnimatedSprite2D = $GlintSprite
 @onready var health_script = $HealthScript
 
 var flicker_timer: Timer
@@ -33,17 +34,11 @@ signal parry_stacks_changed(new_stacks: int)  # Signal for UI updates
 @export var charge_texture_4: Texture2D
 @export var empty_charge_texture: Texture2D  # Texture for empty state
 
-# References to the 3 charge sprites (filled) - Drag from scene tree
-@export var charge_sprite_1: Sprite2D
-@export var charge_sprite_2: Sprite2D
-@export var charge_sprite_3: Sprite2D
-
 # References to the 3 empty charge sprites - Drag from scene tree
 @export var empty_charge_sprite_1: Sprite2D
 @export var empty_charge_sprite_2: Sprite2D
 @export var empty_charge_sprite_3: Sprite2D
 
-var charge_sprites: Array[Sprite2D] = []
 var empty_charge_sprites: Array[Sprite2D] = []
 var charge_textures: Array[Texture2D] = []
 var assigned_textures: Array[Texture2D] = []  # Remember assigned textures for each sprite
@@ -178,6 +173,13 @@ func _ready():
 	# Setup charge sprites and textures
 	setup_charge_system()
 	
+	# Initialize glint sprite as inactive
+	if glint_sprite:
+		glint_sprite.visible = false
+		print("Glint sprite initialized as inactive")
+	else:
+		print("Warning: GlintSprite not found!")
+	
 	# Calculate dash duration based on distance and speed
 	dash_duration = dash_distance / dash_speed
 	
@@ -245,6 +247,12 @@ func activate_parry():
 	# Grant invulnerability through health script
 	health_script.is_invulnerable = true
 	
+	# Activate glint sprite
+	if glint_sprite:
+		glint_sprite.visible = true
+		glint_sprite.play("default")  # Play the glint animation (adjust animation name as needed)
+		print("Glint sprite activated")
+	
 	# Start parry timer
 	parry_timer.start()
 	
@@ -261,6 +269,12 @@ func _on_parry_timeout():
 	
 	# Remove invulnerability
 	health_script.is_invulnerable = false
+	
+	# Deactivate glint sprite
+	if glint_sprite:
+		glint_sprite.visible = false
+		glint_sprite.stop()  # Stop the animation
+		print("Glint sprite deactivated")
 	
 	# Stop flicker effect
 	is_flickering = false
@@ -321,8 +335,7 @@ func get_parry_stacks() -> int:
 
 # Charge sprite system functions
 func setup_charge_system():
-	# Store references to charge sprites
-	charge_sprites = [charge_sprite_1, charge_sprite_2, charge_sprite_3]
+	# Store references to empty charge sprites only
 	empty_charge_sprites = [empty_charge_sprite_1, empty_charge_sprite_2, empty_charge_sprite_3]
 	
 	# Store texture references in array
@@ -333,17 +346,6 @@ func setup_charge_system():
 	
 	# Initially all sprites should show as empty
 	update_charge_sprites()
-
-func randomize_charge_textures():
-	# Assign a random texture from the 4 options to each charge sprite
-	for i in range(charge_sprites.size()):
-		if charge_sprites[i] and charge_textures.size() > 0:
-			# Filter out null textures
-			var valid_textures = charge_textures.filter(func(texture): return texture != null)
-			if valid_textures.size() > 0:
-				var random_texture = valid_textures[randi() % valid_textures.size()]
-				charge_sprites[i].texture = random_texture
-				print("Charge sprite ", i + 1, " assigned random texture")
 
 func update_charge_sprites():
 	# Update empty charge sprites based on current stack count
@@ -370,16 +372,36 @@ func update_charge_sprites():
 		
 		print("Charge slot ", i + 1, " - State: ", ("FILLED" if i < current_parry_stacks else "EMPTY"))
 
+func get_currently_used_textures() -> Array[Texture2D]:
+	# Get all textures currently assigned to filled sprites
+	var used_textures: Array[Texture2D] = []
+	for i in range(current_parry_stacks):
+		if assigned_textures[i] != null:
+			used_textures.append(assigned_textures[i])
+	return used_textures
+
 func assign_new_random_texture_to_sprite(index: int):
-	# Assign a random texture from the 4 options and remember it
+	# Assign a random texture from the 4 options and remember it, ensuring no repeats
 	if index < empty_charge_sprites.size() and empty_charge_sprites[index]:
 		var valid_textures = charge_textures.filter(func(texture): return texture != null)
 		if valid_textures.size() > 0:
-			var random_texture = valid_textures[randi() % valid_textures.size()]
+			# Get currently used textures to avoid repeats
+			var used_textures = get_currently_used_textures()
+			
+			# Filter out textures that are already in use
+			var available_textures = valid_textures.filter(func(texture): return not texture in used_textures)
+			
+			# If all textures are used but we have more slots than textures, allow repeats
+			if available_textures.size() == 0:
+				available_textures = valid_textures
+				print("Warning: All textures in use, allowing repeats for sprite ", index + 1)
+			
+			# Pick a random texture from available ones
+			var random_texture = available_textures[randi() % available_textures.size()]
 			assigned_textures[index] = random_texture  # Remember this texture
 			empty_charge_sprites[index].texture = random_texture
 			empty_charge_sprites[index].modulate.a = 1.0  # Make sure it's fully visible
-			print("Empty charge sprite ", index + 1, " assigned NEW random texture and remembered it")
+			print("Empty charge sprite ", index + 1, " assigned NEW unique random texture and remembered it")
 
 func assign_empty_texture_to_sprite(index: int):
 	# Assign the empty texture to show the sprite as empty
@@ -568,6 +590,11 @@ func _on_player_died():
 	animated_sprite.modulate.a = 1.0
 	pending_bounce_direction = 0.0
 	bounce_direction_vector = Vector2.ZERO
+	
+	# Deactivate glint sprite on death
+	if glint_sprite:
+		glint_sprite.visible = false
+		glint_sprite.stop()
 	
 	# Reset parry stacks on death
 	reset_parry_stacks()

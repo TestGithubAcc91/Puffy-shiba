@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=38 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="Texture2D" uid="uid://qiypnm1c8eua" path="res://Assets/sprites/knight.png" id="1_v0iea"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://43vkm7xwgije" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeG.png" id="5_x3wgy"]
 [ext_resource type="Texture2D" uid="uid://bbkx61gvv1jye" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeY.png" id="6_3smsa"]
 [ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
+[ext_resource type="Texture2D" uid="uid://cc46slmlinkrh" path="res://Assets/sprites/PlayerSprites/glint_anim.png" id="9_f1ek2"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qxrlw"]
 atlas = ExtResource("1_v0iea")
@@ -177,6 +178,42 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_cvnsp"]
 radius = 6.0
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_fs7ks"]
+atlas = ExtResource("9_f1ek2")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_l6n3p"]
+atlas = ExtResource("9_f1ek2")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_olqyp"]
+atlas = ExtResource("9_f1ek2")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wpjfl"]
+atlas = ExtResource("9_f1ek2")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_bi64h"]
+animations = [{
+"frames": [{
+"duration": 1.3,
+"texture": SubResource("AtlasTexture_fs7ks")
+}, {
+"duration": 0.6,
+"texture": SubResource("AtlasTexture_l6n3p")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_olqyp")
+}, {
+"duration": 0.6,
+"texture": SubResource("AtlasTexture_wpjfl")
+}],
+"loop": true,
+"name": &"default",
+"speed": 7.0
+}]
+
 [node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("empty_charge_sprite_1", "empty_charge_sprite_2", "empty_charge_sprite_3")]
 script = ExtResource("1_cvnsp")
 charge_texture_1 = ExtResource("4_vgqql")
@@ -188,7 +225,7 @@ empty_charge_sprite_1 = NodePath("ParryCharge1")
 empty_charge_sprite_2 = NodePath("ParryCharge2")
 empty_charge_sprite_3 = NodePath("ParryCharge3")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="MainSprite" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -12)
 sprite_frames = SubResource("SpriteFrames_i6g32")
 animation = &"Jump"
@@ -212,3 +249,10 @@ texture = ExtResource("8_f1ek2")
 [node name="ParryCharge3" type="Sprite2D" parent="."]
 position = Vector2(13, -17)
 texture = ExtResource("8_f1ek2")
+
+[node name="GlintSprite" type="AnimatedSprite2D" parent="."]
+visible = false
+position = Vector2(-3, -12)
+sprite_frames = SubResource("SpriteFrames_bi64h")
+autoplay = "default"
+frame_progress = 0.0673092
