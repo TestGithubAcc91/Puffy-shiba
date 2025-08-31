@@ -23,6 +23,12 @@ Music="*res://Scenes/music.tscn"
 
 enabled=PackedStringArray("res://addons/godot_super-wakatime/plugin.cfg")
 
+[file_customization]
+
+folder_colors={
+"res://Assets/sprites/PlayerGUI/": "red"
+}
+
 [input]
 
 Jump={

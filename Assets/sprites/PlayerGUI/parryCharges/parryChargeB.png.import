@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://clumim7dcnmxe"
-path="res://.godot/imported/puffyHP3.png-100ff476ec4c2c3871ffe46748903989.ctex"
+uid="uid://p0l22jx1g27v"
+path="res://.godot/imported/parryChargeB.png-2f5e17ac91bdaf1339d5653963aeaca3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/sprites/PlayerGUI/puffyHP3.png"
-dest_files=["res://.godot/imported/puffyHP3.png-100ff476ec4c2c3871ffe46748903989.ctex"]
+source_file="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeB.png"
+dest_files=["res://.godot/imported/parryChargeB.png-2f5e17ac91bdaf1339d5653963aeaca3.ctex"]
 
 [params]
 

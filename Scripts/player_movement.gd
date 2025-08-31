@@ -21,6 +21,33 @@ var parry_cooldown_timer: Timer
 var can_parry: bool = true
 var parry_was_successful: bool = false  # Track if the current parry was successful
 
+# Parry stack system variables
+@export var max_parry_stacks: int = 3  # Maximum number of parry stacks
+var current_parry_stacks: int = 0  # Current number of parry stacks
+signal parry_stacks_changed(new_stacks: int)  # Signal for UI updates
+
+# Charge sprite textures (4 random options)
+@export var charge_texture_1: Texture2D
+@export var charge_texture_2: Texture2D
+@export var charge_texture_3: Texture2D
+@export var charge_texture_4: Texture2D
+@export var empty_charge_texture: Texture2D  # Texture for empty state
+
+# References to the 3 charge sprites (filled) - Drag from scene tree
+@export var charge_sprite_1: Sprite2D
+@export var charge_sprite_2: Sprite2D
+@export var charge_sprite_3: Sprite2D
+
+# References to the 3 empty charge sprites - Drag from scene tree
+@export var empty_charge_sprite_1: Sprite2D
+@export var empty_charge_sprite_2: Sprite2D
+@export var empty_charge_sprite_3: Sprite2D
+
+var charge_sprites: Array[Sprite2D] = []
+var empty_charge_sprites: Array[Sprite2D] = []
+var charge_textures: Array[Texture2D] = []
+var assigned_textures: Array[Texture2D] = []  # Remember assigned textures for each sprite
+
 # Dash system variables
 @export var dash_distance: float = 200.0  # How far the dash goes
 @export var dash_speed: float = 800.0  # How fast the dash moves (pixels per second)
@@ -52,7 +79,7 @@ var bounce_direction_vector: Vector2 = Vector2.ZERO  # Store bounce direction as
 
 func _physics_process(delta: float) -> void:
 	# Handle dash input
-	if Input.is_action_just_pressed("Dash") and can_dash:
+	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 2:
 		activate_dash()
 	
 	# If dashing, override normal movement
@@ -112,7 +139,7 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 	
 	# Handle high jump (Q key)
-	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump:
+	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2:
 		activate_high_jump()
 	
 	# Handle parry input
@@ -147,6 +174,9 @@ func _ready():
 	health_script.died.connect(_on_player_died)
 	health_script.iframe_started.connect(_on_iframe_started)
 	health_script.iframe_ended.connect(_on_iframe_ended)
+	
+	# Setup charge sprites and textures
+	setup_charge_system()
 	
 	# Calculate dash duration based on distance and speed
 	dash_duration = dash_distance / dash_speed
@@ -257,12 +287,128 @@ func _on_parry_cooldown_timeout():
 func on_parry_success():
 	print("Parry success registered!")
 	parry_was_successful = true
+	
+	# Add a parry stack
+	add_parry_stack()
+
+# Parry stack management functions
+func add_parry_stack():
+	if current_parry_stacks < max_parry_stacks:
+		current_parry_stacks += 1
+		print("Parry stack gained! Current stacks: ", current_parry_stacks, "/", max_parry_stacks)
+		parry_stacks_changed.emit(current_parry_stacks)
+		update_charge_sprites()
+	else:
+		print("Max parry stacks reached (", max_parry_stacks, ")")
+
+func consume_parry_stack():
+	if current_parry_stacks > 0:
+		current_parry_stacks -= 1
+		print("Parry stack consumed! Remaining stacks: ", current_parry_stacks, "/", max_parry_stacks)
+		parry_stacks_changed.emit(current_parry_stacks)
+		update_charge_sprites()
+		return true
+	return false
+
+func reset_parry_stacks():
+	current_parry_stacks = 0
+	print("Parry stacks reset!")
+	parry_stacks_changed.emit(current_parry_stacks)
+	update_charge_sprites()
+
+func get_parry_stacks() -> int:
+	return current_parry_stacks
+
+# Charge sprite system functions
+func setup_charge_system():
+	# Store references to charge sprites
+	charge_sprites = [charge_sprite_1, charge_sprite_2, charge_sprite_3]
+	empty_charge_sprites = [empty_charge_sprite_1, empty_charge_sprite_2, empty_charge_sprite_3]
+	
+	# Store texture references in array
+	charge_textures = [charge_texture_1, charge_texture_2, charge_texture_3, charge_texture_4]
+	
+	# Initialize assigned textures array (null means no texture assigned yet)
+	assigned_textures = [null, null, null]
+	
+	# Initially all sprites should show as empty
+	update_charge_sprites()
+
+func randomize_charge_textures():
+	# Assign a random texture from the 4 options to each charge sprite
+	for i in range(charge_sprites.size()):
+		if charge_sprites[i] and charge_textures.size() > 0:
+			# Filter out null textures
+			var valid_textures = charge_textures.filter(func(texture): return texture != null)
+			if valid_textures.size() > 0:
+				var random_texture = valid_textures[randi() % valid_textures.size()]
+				charge_sprites[i].texture = random_texture
+				print("Charge sprite ", i + 1, " assigned random texture")
+
+func update_charge_sprites():
+	# Update empty charge sprites based on current stack count
+	# Fill from left to right (1, 2, 3), empty from right to left (3, 2, 1)
+	for i in range(empty_charge_sprites.size()):
+		if empty_charge_sprites[i]:
+			if i < current_parry_stacks:
+				# This slot should be filled
+				if assigned_textures[i] == null:
+					# No texture assigned yet - assign a new random one
+					assign_new_random_texture_to_sprite(i)
+				else:
+					# Texture already assigned - use the remembered one
+					empty_charge_sprites[i].texture = assigned_textures[i]
+					empty_charge_sprites[i].modulate.a = 1.0  # Make sure it's fully visible
+					print("Empty charge sprite ", i + 1, " using remembered texture")
+			else:
+				# This slot should be empty - clear assigned texture and show empty
+				assigned_textures[i] = null  # Clear the remembered texture
+				assign_empty_texture_to_sprite(i)
+			
+			# Always keep sprites visible
+			empty_charge_sprites[i].visible = true
+		
+		print("Charge slot ", i + 1, " - State: ", ("FILLED" if i < current_parry_stacks else "EMPTY"))
+
+func assign_new_random_texture_to_sprite(index: int):
+	# Assign a random texture from the 4 options and remember it
+	if index < empty_charge_sprites.size() and empty_charge_sprites[index]:
+		var valid_textures = charge_textures.filter(func(texture): return texture != null)
+		if valid_textures.size() > 0:
+			var random_texture = valid_textures[randi() % valid_textures.size()]
+			assigned_textures[index] = random_texture  # Remember this texture
+			empty_charge_sprites[index].texture = random_texture
+			empty_charge_sprites[index].modulate.a = 1.0  # Make sure it's fully visible
+			print("Empty charge sprite ", index + 1, " assigned NEW random texture and remembered it")
+
+func assign_empty_texture_to_sprite(index: int):
+	# Assign the empty texture to show the sprite as empty
+	if index < empty_charge_sprites.size() and empty_charge_sprites[index]:
+		if empty_charge_texture:
+			empty_charge_sprites[index].texture = empty_charge_texture
+			empty_charge_sprites[index].modulate.a = 1.0  # Reset alpha
+			print("Empty charge sprite ", index + 1, " assigned empty texture")
+		else:
+			# If no empty texture is set, make sprite semi-transparent
+			empty_charge_sprites[index].modulate.a = 0.3
+			print("Empty charge sprite ", index + 1, " made semi-transparent (no empty texture)")
 
 func activate_dash():
 	if not can_dash or is_dashing:
 		return
 	
-	print("Dash activated!")
+	# Check if we have enough stacks to use dash
+	if current_parry_stacks < 2:
+		print("Not enough parry stacks for dash! Need 2 stacks, have ", current_parry_stacks)
+		return
+	
+	print("Dash activated! Consuming 2 parry stacks. Current: ", current_parry_stacks, "/", max_parry_stacks)
+	
+	# Consume 2 stacks for dash
+	current_parry_stacks -= 2
+	print("Dash consumed 2 stacks. Remaining: ", current_parry_stacks, "/", max_parry_stacks)
+	parry_stacks_changed.emit(current_parry_stacks)
+	update_charge_sprites()
 	
 	# Store ground state when dash starts
 	dash_started_on_ground = is_on_floor()
@@ -291,7 +437,18 @@ func activate_high_jump():
 	if not can_high_jump:
 		return
 	
-	print("High jump activated!")
+	# Check if we have enough stacks to use high jump
+	if current_parry_stacks < 2:
+		print("Not enough parry stacks for high jump! Need 2 stacks, have ", current_parry_stacks)
+		return
+	
+	print("High jump activated! Consuming 2 parry stacks. Current: ", current_parry_stacks, "/", max_parry_stacks)
+	
+	# Consume 2 stacks for high jump
+	current_parry_stacks -= 2
+	print("High jump consumed 2 stacks. Remaining: ", current_parry_stacks, "/", max_parry_stacks)
+	parry_stacks_changed.emit(current_parry_stacks)
+	update_charge_sprites()
 	
 	# Apply high jump velocity
 	velocity.y = HIGH_JUMP_VELOCITY
@@ -411,6 +568,9 @@ func _on_player_died():
 	animated_sprite.modulate.a = 1.0
 	pending_bounce_direction = 0.0
 	bounce_direction_vector = Vector2.ZERO
+	
+	# Reset parry stacks on death
+	reset_parry_stacks()
 	
 	# Add the same time scale effect as the original script
 	Engine.time_scale = 0.2

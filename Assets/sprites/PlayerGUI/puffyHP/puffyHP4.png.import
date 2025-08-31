@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5mifn5x6hqap"
-path="res://.godot/imported/puffyHP4.png-b7098aac9bfd94fa0db231e40df0ac41.ctex"
+path="res://.godot/imported/puffyHP4.png-1f895378ac270132453fa3271fbe1686.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/sprites/PlayerGUI/puffyHP4.png"
-dest_files=["res://.godot/imported/puffyHP4.png-b7098aac9bfd94fa0db231e40df0ac41.ctex"]
+source_file="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP4.png"
+dest_files=["res://.godot/imported/puffyHP4.png-1f895378ac270132453fa3271fbe1686.ctex"]
 
 [params]
 

@@ -1,8 +1,13 @@
-[gd_scene load_steps=27 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=32 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="Texture2D" uid="uid://qiypnm1c8eua" path="res://Assets/sprites/knight.png" id="1_v0iea"]
 [ext_resource type="Script" uid="uid://op6sw0x6ufu0" path="res://Scripts/player_health.gd" id="3_6t5aa"]
+[ext_resource type="Texture2D" uid="uid://dqq5r8k5fmji" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeR.png" id="4_8erm5"]
+[ext_resource type="Texture2D" uid="uid://p0l22jx1g27v" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeB.png" id="4_vgqql"]
+[ext_resource type="Texture2D" uid="uid://43vkm7xwgije" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeG.png" id="5_x3wgy"]
+[ext_resource type="Texture2D" uid="uid://bbkx61gvv1jye" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeY.png" id="6_3smsa"]
+[ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qxrlw"]
 atlas = ExtResource("1_v0iea")
@@ -172,8 +177,16 @@ animations = [{
 [sub_resource type="CircleShape2D" id="CircleShape2D_cvnsp"]
 radius = 6.0
 
-[node name="Player" type="CharacterBody2D"]
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("empty_charge_sprite_1", "empty_charge_sprite_2", "empty_charge_sprite_3")]
 script = ExtResource("1_cvnsp")
+charge_texture_1 = ExtResource("4_vgqql")
+charge_texture_2 = ExtResource("5_x3wgy")
+charge_texture_3 = ExtResource("4_8erm5")
+charge_texture_4 = ExtResource("6_3smsa")
+empty_charge_texture = ExtResource("8_f1ek2")
+empty_charge_sprite_1 = NodePath("ParryCharge1")
+empty_charge_sprite_2 = NodePath("ParryCharge2")
+empty_charge_sprite_3 = NodePath("ParryCharge3")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -12)
@@ -187,3 +200,15 @@ shape = SubResource("CircleShape2D_cvnsp")
 
 [node name="HealthScript" type="Node" parent="."]
 script = ExtResource("3_6t5aa")
+
+[node name="ParryCharge1" type="Sprite2D" parent="."]
+position = Vector2(-13, -17)
+texture = ExtResource("8_f1ek2")
+
+[node name="ParryCharge2" type="Sprite2D" parent="."]
+position = Vector2(0, -23)
+texture = ExtResource("8_f1ek2")
+
+[node name="ParryCharge3" type="Sprite2D" parent="."]
+position = Vector2(13, -17)
+texture = ExtResource("8_f1ek2")

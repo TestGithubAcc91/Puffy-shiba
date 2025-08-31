@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bbthv78mei3lb"
-path="res://.godot/imported/puffyHP2.png-8894f4bcf35a4486d4e17954c1280aaa.ctex"
+uid="uid://de2orudnm0dbm"
+path="res://.godot/imported/puffyHP1.png-eeaa9a220d5797bfc49976ba8b4dffa5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/sprites/PlayerGUI/puffyHP2.png"
-dest_files=["res://.godot/imported/puffyHP2.png-8894f4bcf35a4486d4e17954c1280aaa.ctex"]
+source_file="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP1.png"
+dest_files=["res://.godot/imported/puffyHP1.png-eeaa9a220d5797bfc49976ba8b4dffa5.ctex"]
 
 [params]
 
