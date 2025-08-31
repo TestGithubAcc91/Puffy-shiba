@@ -44,6 +44,9 @@ func deal_damage_to_player(player: Node2D):
 		# If player was parrying and no damage was dealt, trigger freeze effect
 		if is_player_parrying and not damage_was_dealt:
 			print("Successful parry! Triggering freeze effect")
+			# Notify the player that the parry was successful
+			if player.has_method("on_parry_success"):
+				player.on_parry_success()
 			trigger_parry_freeze()
 		elif damage_was_dealt:
 			# Normal hit effect (your existing effect)

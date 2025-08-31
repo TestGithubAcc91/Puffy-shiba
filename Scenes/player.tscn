@@ -1,6 +1,6 @@
 [gd_scene load_steps=27 format=3 uid="uid://bkfnr4qat1ah0"]
 
-[ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player.gd" id="1_cvnsp"]
+[ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="Texture2D" uid="uid://qiypnm1c8eua" path="res://Assets/sprites/knight.png" id="1_v0iea"]
 [ext_resource type="Script" uid="uid://op6sw0x6ufu0" path="res://Scripts/player_health.gd" id="3_6t5aa"]
 
