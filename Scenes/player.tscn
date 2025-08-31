@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=39 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="Texture2D" uid="uid://qiypnm1c8eua" path="res://Assets/sprites/knight.png" id="1_v0iea"]
@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" uid="uid://bbkx61gvv1jye" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeY.png" id="6_3smsa"]
 [ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
 [ext_resource type="Texture2D" uid="uid://cc46slmlinkrh" path="res://Assets/sprites/PlayerSprites/glint_anim.png" id="9_f1ek2"]
+[ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="10_tx1dd"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qxrlw"]
 atlas = ExtResource("1_v0iea")
@@ -255,4 +256,16 @@ visible = false
 position = Vector2(-3, -12)
 sprite_frames = SubResource("SpriteFrames_bi64h")
 autoplay = "default"
-frame_progress = 0.0673092
+frame_progress = 0.759047
+
+[node name="Late_EarlyLabel" type="Label" parent="."]
+visible = false
+offset_left = 9.0
+offset_top = -15.0
+offset_right = 55.0
+offset_bottom = 8.0
+theme_override_colors/font_color = Color(0.88184, 0.380642, 0.371091, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("10_tx1dd")
+theme_override_font_sizes/font_size = 7
+text = "Late!"
