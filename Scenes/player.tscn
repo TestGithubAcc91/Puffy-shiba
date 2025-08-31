@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=30 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="Script" uid="uid://op6sw0x6ufu0" path="res://Scripts/player_health.gd" id="3_6t5aa"]
@@ -6,10 +6,19 @@
 [ext_resource type="Texture2D" uid="uid://p0l22jx1g27v" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeB.png" id="4_vgqql"]
 [ext_resource type="Texture2D" uid="uid://43vkm7xwgije" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeG.png" id="5_x3wgy"]
 [ext_resource type="Texture2D" uid="uid://bbkx61gvv1jye" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeY.png" id="6_3smsa"]
+[ext_resource type="Texture2D" uid="uid://b3v6fvv7a0rdx" path="res://Assets/sprites/PlayerSprites/highJump_dashPuffy.png" id="7_gymyn"]
 [ext_resource type="Texture2D" uid="uid://d3yjier25qwfg" path="res://Assets/sprites/PlayerSprites/parry_jumpPuffy.png" id="7_tx1dd"]
 [ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
 [ext_resource type="Texture2D" uid="uid://cc46slmlinkrh" path="res://Assets/sprites/PlayerSprites/glint_anim.png" id="9_f1ek2"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="10_tx1dd"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_igrcy"]
+atlas = ExtResource("7_gymyn")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bi64h"]
+atlas = ExtResource("7_gymyn")
+region = Rect2(0, 0, 16, 16)
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_tx1dd"]
 load_path = "res://.godot/imported/puffyWalk.png-3645a6445e52bd6f8ddd03ef61130809.ctex"
@@ -25,6 +34,10 @@ region = Rect2(48, 0, 16, 16)
 [sub_resource type="AtlasTexture" id="AtlasTexture_qqcod"]
 atlas = ExtResource("7_tx1dd")
 region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tx1dd"]
+atlas = ExtResource("7_tx1dd")
+region = Rect2(0, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pu2lt"]
 atlas = SubResource("CompressedTexture2D_tx1dd")
@@ -45,6 +58,22 @@ region = Rect2(48, 0, 16, 16)
 [sub_resource type="SpriteFrames" id="SpriteFrames_i6g32"]
 animations = [{
 "frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_igrcy")
+}],
+"loop": true,
+"name": &"Dash",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bi64h")
+}],
+"loop": true,
+"name": &"HighJump",
+"speed": 5.0
+}, {
+"frames": [{
 "duration": 2.0,
 "texture": SubResource("AtlasTexture_gymyn")
 }, {
@@ -61,6 +90,14 @@ animations = [{
 }],
 "loop": true,
 "name": &"Jump",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tx1dd")
+}],
+"loop": true,
+"name": &"Parry",
 "speed": 5.0
 }, {
 "frames": [{
@@ -134,9 +171,8 @@ empty_charge_sprite_3 = NodePath("ParryCharge3")
 [node name="MainSprite" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -7)
 sprite_frames = SubResource("SpriteFrames_i6g32")
-animation = &"Jump"
+animation = &"Run"
 autoplay = "Idle"
-frame_progress = 0.123773
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -6)
@@ -144,6 +180,7 @@ shape = SubResource("CircleShape2D_cvnsp")
 
 [node name="HealthScript" type="Node" parent="."]
 script = ExtResource("3_6t5aa")
+iframe_duration = 1.5
 
 [node name="ParryCharge1" type="Sprite2D" parent="."]
 position = Vector2(-13, -17)
@@ -158,11 +195,19 @@ position = Vector2(13, -17)
 texture = ExtResource("8_f1ek2")
 
 [node name="GlintSprite" type="AnimatedSprite2D" parent="."]
+position = Vector2(-4, -12)
+sprite_frames = SubResource("SpriteFrames_bi64h")
+autoplay = "default"
+frame = 3
+frame_progress = 1.0
+
+[node name="AirPuff" type="AnimatedSprite2D" parent="."]
 visible = false
 position = Vector2(-3, -12)
 sprite_frames = SubResource("SpriteFrames_bi64h")
 autoplay = "default"
-frame_progress = 0.862286
+frame = 3
+frame_progress = 1.0
 
 [node name="Late_EarlyLabel" type="Label" parent="."]
 visible = false

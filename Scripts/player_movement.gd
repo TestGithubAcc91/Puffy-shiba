@@ -38,6 +38,14 @@ var is_fading_late_text: bool = false
 var showing_late_text: bool = false
 @export var late_fade_duration: float = 0.5
 
+# New variables for parry animation and time freeze
+var parry_freeze_timer: Timer
+var is_in_parry_freeze: bool = false
+var parry_pre_freeze_timer: Timer
+var is_in_pre_freeze_parry: bool = false
+@export var parry_freeze_duration: float = 0.3
+@export var parry_pre_freeze_duration: float = 0.1
+
 @export var max_parry_stacks: int = 3
 var current_parry_stacks: int = 0
 signal parry_stacks_changed(new_stacks: int)
@@ -84,6 +92,8 @@ var bounce_duration: float = 0.0
 var bounce_direction_vector: Vector2 = Vector2.ZERO
 
 func _physics_process(delta: float) -> void:
+	# No physics blocking - let time_scale handle the freeze
+	
 	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 2:
 		activate_dash()
 	
@@ -140,16 +150,22 @@ func _physics_process(delta: float) -> void:
 	
 	if direction > 0:
 		animated_sprite.flip_h = false
+		if glint_sprite:
+			glint_sprite.position.x = abs(glint_sprite.position.x) * -1  # Negative x when facing right
 	elif direction < 0:
 		animated_sprite.flip_h = true
-		
-	if is_on_floor():
-		if direction == 0:
-			animated_sprite.play("Idle")
-		else:
-			animated_sprite.play("Run")
-	else: 
-		animated_sprite.play("Jump")
+		if glint_sprite:
+			glint_sprite.position.x = abs(glint_sprite.position.x)  # Positive x when facing left
+	
+	# Only update animations if not playing special animations (parry or dash)
+	if not is_in_pre_freeze_parry and not is_dashing:
+		if is_on_floor():
+			if direction == 0:
+				animated_sprite.play("Idle")
+			else:
+				animated_sprite.play("Run")
+		else: 
+			animated_sprite.play("Jump")
 	
 	if direction:
 		velocity.x = direction * SPEED
@@ -197,6 +213,19 @@ func _ready():
 	parry_cooldown_timer.one_shot = true
 	parry_cooldown_timer.timeout.connect(_on_parry_cooldown_timeout)
 	add_child(parry_cooldown_timer)
+	
+	# New timers for parry animation and freeze
+	parry_pre_freeze_timer = Timer.new()
+	parry_pre_freeze_timer.wait_time = parry_pre_freeze_duration
+	parry_pre_freeze_timer.one_shot = true
+	parry_pre_freeze_timer.timeout.connect(_on_parry_pre_freeze_timeout)
+	add_child(parry_pre_freeze_timer)
+	
+	parry_freeze_timer = Timer.new()
+	parry_freeze_timer.wait_time = parry_freeze_duration
+	parry_freeze_timer.one_shot = true
+	parry_freeze_timer.timeout.connect(_on_parry_freeze_timeout)
+	add_child(parry_freeze_timer)
 	
 	dash_timer = Timer.new()
 	dash_timer.wait_time = dash_duration
@@ -283,8 +312,6 @@ func _on_parry_timeout():
 		glint_sprite.visible = false
 		glint_sprite.stop()
 	
-
-	
 	if parry_early_timer.time_left > 0:
 		parry_early_timer.stop()
 	
@@ -316,6 +343,19 @@ func _on_damage_timer_timeout():
 
 func _on_parry_end_timer_timeout():
 	recently_parry_ended = false
+
+# New functions for parry animation and freeze
+func _on_parry_pre_freeze_timeout():
+	# End the parry animation and start time freeze
+	is_in_pre_freeze_parry = false
+	is_in_parry_freeze = true
+	Engine.time_scale = 1  # Slow down time significantly
+	parry_freeze_timer.start()
+
+func _on_parry_freeze_timeout():
+	# End time freeze - player movement will resume immediately with time_scale
+	is_in_parry_freeze = false
+	Engine.time_scale = 1.0
 
 func _on_early_text_timeout():
 	if parry_label:
@@ -354,6 +394,16 @@ func _on_late_fade_tick():
 func on_parry_success():
 	parry_was_successful = true
 	add_parry_stack()
+	
+	# Start the parry animation sequence - set state first, then animation
+	is_in_pre_freeze_parry = true
+	parry_pre_freeze_timer.start()
+	# Use call_deferred to ensure the animation plays after _physics_process
+	call_deferred("_play_parry_animation")
+
+func _play_parry_animation():
+	if is_in_pre_freeze_parry:
+		animated_sprite.play("Parry")
 
 func add_parry_stack():
 	if current_parry_stacks < max_parry_stacks:
@@ -450,6 +500,9 @@ func activate_dash():
 	
 	is_dashing = true
 	can_dash = false
+	
+	# Start dash animation
+	animated_sprite.play("Dash")
 	
 	dash_timer.start()
 	dash_cooldown_timer.start()
@@ -559,9 +612,13 @@ func _on_player_died():
 	is_parrying = false
 	is_dashing = false
 	is_bouncing = false
+	is_in_parry_freeze = false
+	is_in_pre_freeze_parry = false
 	flicker_timer.stop()
 	parry_timer.stop()
 	parry_cooldown_timer.stop()
+	parry_freeze_timer.stop()
+	parry_pre_freeze_timer.stop()
 	dash_timer.stop()
 	dash_cooldown_timer.stop()
 	bounce_timer.stop()
