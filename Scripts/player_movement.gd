@@ -706,3 +706,5 @@ func _on_player_died():
 	
 	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()
+	
+	

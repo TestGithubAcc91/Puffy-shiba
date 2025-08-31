@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://dcdvbgcpw0scp" path="res://Scenes/platform.tscn" id="3_wrm1d"]
 [ext_resource type="PackedScene" uid="uid://bp1jjjj6d1sce" path="res://Scenes/coin.tscn" id="4_3dryh"]
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="5_wowpa"]
-[ext_resource type="PackedScene" uid="uid://b2vrnra2k4b62" path="res://Scenes/slime.tscn" id="6_i6g32"]
+[ext_resource type="PackedScene" uid="uid://b2vrnra2k4b62" path="res://Scenes/clover.tscn" id="6_i6g32"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="7_1l0tm"]
 [ext_resource type="Texture2D" uid="uid://5mifn5x6hqap" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP4.png" id="9_h4fw4"]
 [ext_resource type="Script" uid="uid://d0c6la3t6odq5" path="res://Scripts/HealthBoxContainer.gd" id="9_ldgsr"]
@@ -558,8 +558,8 @@ tile_set = SubResource("TileSet_3dryh")
 
 [node name="EnemyHolder" type="Node" parent="LevelHolder"]
 
-[node name="Slime" parent="LevelHolder/EnemyHolder" instance=ExtResource("6_i6g32")]
-position = Vector2(440, 20)
+[node name="Clover" parent="LevelHolder/EnemyHolder" instance=ExtResource("6_i6g32")]
+position = Vector2(444, 15)
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

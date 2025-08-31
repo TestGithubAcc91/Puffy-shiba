@@ -26,6 +26,7 @@ enabled=PackedStringArray("res://addons/godot_super-wakatime/plugin.cfg")
 [file_customization]
 
 folder_colors={
+"res://Assets/sprites/EnemySprites/": "green",
 "res://Assets/sprites/PlayerGUI/": "red",
 "res://Assets/sprites/PlayerSprites/": "yellow"
 }

@@ -29,35 +29,45 @@ func deal_damage_to_player(player: Node2D):
 		if "is_parrying" in player:
 			is_player_parrying = player.is_parrying
 		
-		print("Dealing ", damage_amount, " damage to player (ignore i-frames: ", ignore_iframes, ", player parrying: ", is_player_parrying, ")")
+		# Check if this enemy is in spiked form (unparryable)
+		var is_enemy_spiked = false
+		var enemy = get_parent()  # Assuming the damage area is a child of the enemy
+		if enemy and enemy.has_method("is_in_spiked_form"):
+			is_enemy_spiked = enemy.is_in_spiked_form()
+		
+		print("Dealing ", damage_amount, " damage to player (ignore i-frames: ", ignore_iframes, ", player parrying: ", is_player_parrying, ", enemy spiked: ", is_enemy_spiked, ")")
 		
 		# Store the player's health before damage attempt
 		var health_before = health_component.current_health
 		
+		# If enemy is spiked, force ignore iframes to bypass parry
+		var force_ignore_iframes = ignore_iframes or is_enemy_spiked
+		
 		# Attempt to deal damage
-		health_component.take_damage(damage_amount, ignore_iframes)
+		health_component.take_damage(damage_amount, force_ignore_iframes)
 		
 		# Check if damage was actually dealt (health changed)
 		var health_after = health_component.current_health
 		var damage_was_dealt = health_before != health_after
 		
-		# If player was parrying and no damage was dealt, trigger freeze effect
-		if is_player_parrying and not damage_was_dealt:
+		# If player was parrying and no damage was dealt, and enemy is NOT in spiked form, trigger freeze effect
+		if is_player_parrying and not damage_was_dealt and not is_enemy_spiked:
 			print("Successful parry! Triggering freeze effect")
 			# Notify the player that the parry was successful
 			if player.has_method("on_parry_success"):
 				player.on_parry_success()
 			trigger_parry_freeze()
 		elif damage_was_dealt:
-			# Normal hit effect (your existing effect)
+			# Always trigger damage effects when hit by a spiked enemy
+			if is_enemy_spiked and player.has_method("_on_iframe_started"):
+				player._on_iframe_started()
+			
+			# Normal hit effect
 			Engine.time_scale = 0.8
 			await get_tree().create_timer(0.1).timeout
 			Engine.time_scale = 1.0
 	else:
 		print("Could not find valid HealthScript component on player")
-		print("Available child nodes:")
-		for child in player.get_children():
-			print("  - ", child.name, " (", child.get_script(), ")")
 
 func trigger_parry_freeze():
 	print("Parry freeze activated!")
