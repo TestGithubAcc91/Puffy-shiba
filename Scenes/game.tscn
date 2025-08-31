@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=25 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -10,6 +10,10 @@
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="7_1l0tm"]
 [ext_resource type="Texture2D" uid="uid://5mifn5x6hqap" path="res://Assets/sprites/PlayerGUI/puffyHP4.png" id="9_h4fw4"]
 [ext_resource type="Script" uid="uid://d0c6la3t6odq5" path="res://Scripts/HealthBoxContainer.gd" id="9_ldgsr"]
+[ext_resource type="Texture2D" uid="uid://clumim7dcnmxe" path="res://Assets/sprites/PlayerGUI/puffyHP3.png" id="10_o5yvi"]
+[ext_resource type="Texture2D" uid="uid://bbthv78mei3lb" path="res://Assets/sprites/PlayerGUI/puffyHP2.png" id="11_rfjv2"]
+[ext_resource type="Texture2D" uid="uid://de2orudnm0dbm" path="res://Assets/sprites/PlayerGUI/puffyHP1.png" id="12_1phco"]
+[ext_resource type="Texture2D" uid="uid://bhhpohq32ugvh" path="res://Assets/sprites/PlayerGUI/puffyHPFade.png" id="13_1phco"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -576,6 +580,10 @@ offset_bottom = 75.0
 scale = Vector2(2, 2)
 script = ExtResource("9_ldgsr")
 hp_nodes = [NodePath("HP1"), NodePath("HP2"), NodePath("HP3"), NodePath("HP4")]
+three_hearts_texture = ExtResource("10_o5yvi")
+two_hearts_texture = ExtResource("11_rfjv2")
+one_heart_texture = ExtResource("12_1phco")
+fading_heart_texture = ExtResource("13_1phco")
 
 [node name="HP1" type="TextureRect" parent="UI/HealthBoxContainer"]
 layout_mode = 2

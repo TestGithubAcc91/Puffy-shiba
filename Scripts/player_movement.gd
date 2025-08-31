@@ -2,6 +2,7 @@ extends CharacterBody2D
 
 const SPEED = 150.0
 const JUMP_VELOCITY = -200.0
+const HIGH_JUMP_VELOCITY = -350.0
 
 @onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var health_script = $HealthScript
@@ -28,6 +29,11 @@ var parry_was_successful: bool = false  # Track if the current parry was success
 @export var bounce_delay: float = 0.2  # Delay before horizontal bounce kicks in
 @export var bounce_distance: float = 150.0  # How far the bounce back goes
 @export var bounce_speed: float = 600.0  # How fast the bounce moves (pixels per second)
+
+# High jump system variables
+@export var high_jump_cooldown: float = 2.0  # Cooldown between high jumps
+var high_jump_cooldown_timer: Timer
+var can_high_jump: bool = true
 var dash_timer: Timer
 var dash_cooldown_timer: Timer
 var bounce_timer: Timer
@@ -104,6 +110,10 @@ func _physics_process(delta: float) -> void:
 	# Handle jump.
 	if Input.is_action_just_pressed("Jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
+	
+	# Handle high jump (Q key)
+	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump:
+		activate_high_jump()
 	
 	# Handle parry input
 	if Input.is_action_just_pressed("Parry") and can_parry:
@@ -183,6 +193,13 @@ func _ready():
 	bounce_timer.one_shot = true
 	bounce_timer.timeout.connect(_on_bounce_timeout)
 	add_child(bounce_timer)
+	
+	# Create high jump cooldown timer
+	high_jump_cooldown_timer = Timer.new()
+	high_jump_cooldown_timer.wait_time = high_jump_cooldown
+	high_jump_cooldown_timer.one_shot = true
+	high_jump_cooldown_timer.timeout.connect(_on_high_jump_cooldown_timeout)
+	add_child(high_jump_cooldown_timer)
 
 func activate_parry():
 	if not can_parry:
@@ -269,6 +286,23 @@ func activate_dash():
 	
 	# Start cooldown timer
 	dash_cooldown_timer.start()
+
+func activate_high_jump():
+	if not can_high_jump:
+		return
+	
+	print("High jump activated!")
+	
+	# Apply high jump velocity
+	velocity.y = HIGH_JUMP_VELOCITY
+	
+	# Set cooldown
+	can_high_jump = false
+	high_jump_cooldown_timer.start()
+
+func _on_high_jump_cooldown_timeout():
+	can_high_jump = true
+	print("High jump is ready to use again")
 
 func handle_wall_bounce():
 	print("Wall hit during dash! Bouncing back")
