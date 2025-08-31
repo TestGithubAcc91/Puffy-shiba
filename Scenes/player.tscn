@@ -1,114 +1,55 @@
-[gd_scene load_steps=39 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=26 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
-[ext_resource type="Texture2D" uid="uid://qiypnm1c8eua" path="res://Assets/sprites/knight.png" id="1_v0iea"]
 [ext_resource type="Script" uid="uid://op6sw0x6ufu0" path="res://Scripts/player_health.gd" id="3_6t5aa"]
 [ext_resource type="Texture2D" uid="uid://dqq5r8k5fmji" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeR.png" id="4_8erm5"]
 [ext_resource type="Texture2D" uid="uid://p0l22jx1g27v" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeB.png" id="4_vgqql"]
 [ext_resource type="Texture2D" uid="uid://43vkm7xwgije" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeG.png" id="5_x3wgy"]
 [ext_resource type="Texture2D" uid="uid://bbkx61gvv1jye" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeY.png" id="6_3smsa"]
+[ext_resource type="Texture2D" uid="uid://d3yjier25qwfg" path="res://Assets/sprites/PlayerSprites/parry_jumpPuffy.png" id="7_tx1dd"]
 [ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
 [ext_resource type="Texture2D" uid="uid://cc46slmlinkrh" path="res://Assets/sprites/PlayerSprites/glint_anim.png" id="9_f1ek2"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="10_tx1dd"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_qxrlw"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(0, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_wrm1d"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_3dryh"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(64, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_wowpa"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(96, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_cvnsp"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(64, 160, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_6t5aa"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(0, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_vgqql"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(32, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_fkybt"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(64, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_x3wgy"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(96, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_3smsa"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(128, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_8erm5"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(160, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_f1ek2"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(192, 64, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_tx1dd"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(224, 64, 32, 32)
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_tx1dd"]
+load_path = "res://.godot/imported/puffyWalk.png-3645a6445e52bd6f8ddd03ef61130809.ctex"
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_gymyn"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(0, 96, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_pu2lt"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(32, 96, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ukyrk"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(64, 96, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_7dp3o"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(96, 96, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_h4iuc"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(128, 96, 32, 32)
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(16, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_fd4e3"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(160, 96, 32, 32)
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(48, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_qqcod"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(192, 96, 32, 32)
+atlas = ExtResource("7_tx1dd")
+region = Rect2(16, 0, 16, 16)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_igrcy"]
-atlas = ExtResource("1_v0iea")
-region = Rect2(224, 96, 32, 32)
+[sub_resource type="AtlasTexture" id="AtlasTexture_pu2lt"]
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ukyrk"]
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7dp3o"]
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_h4iuc"]
+atlas = SubResource("CompressedTexture2D_tx1dd")
+region = Rect2(48, 0, 16, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_i6g32"]
 animations = [{
 "frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_qxrlw")
+"duration": 2.0,
+"texture": SubResource("AtlasTexture_gymyn")
 }, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_wrm1d")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_3dryh")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_wowpa")
+"duration": 2.0,
+"texture": SubResource("AtlasTexture_fd4e3")
 }],
 "loop": true,
 "name": &"Idle",
@@ -116,40 +57,13 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_cvnsp")
+"texture": SubResource("AtlasTexture_qqcod")
 }],
 "loop": true,
 "name": &"Jump",
 "speed": 5.0
 }, {
 "frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_6t5aa")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_vgqql")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_fkybt")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_x3wgy")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_3smsa")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_8erm5")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_f1ek2")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_tx1dd")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_gymyn")
-}, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_pu2lt")
 }, {
@@ -161,15 +75,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_h4iuc")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_fd4e3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_qqcod")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_igrcy")
 }],
 "loop": true,
 "name": &"Run",
@@ -227,10 +132,11 @@ empty_charge_sprite_2 = NodePath("ParryCharge2")
 empty_charge_sprite_3 = NodePath("ParryCharge3")
 
 [node name="MainSprite" type="AnimatedSprite2D" parent="."]
-position = Vector2(0, -12)
+position = Vector2(0, -7)
 sprite_frames = SubResource("SpriteFrames_i6g32")
 animation = &"Jump"
 autoplay = "Idle"
+frame_progress = 0.123773
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -6)
@@ -256,7 +162,7 @@ visible = false
 position = Vector2(-3, -12)
 sprite_frames = SubResource("SpriteFrames_bi64h")
 autoplay = "default"
-frame_progress = 0.759047
+frame_progress = 0.862286
 
 [node name="Late_EarlyLabel" type="Label" parent="."]
 visible = false
