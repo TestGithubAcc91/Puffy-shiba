@@ -1,6 +1,7 @@
-[gd_scene load_steps=30 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=31 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
+[ext_resource type="PackedScene" uid="uid://cw3hs2qsg2k4t" path="res://Scenes/air_puff_H.tscn" id="2_pu2lt"]
 [ext_resource type="Script" uid="uid://op6sw0x6ufu0" path="res://Scripts/player_health.gd" id="3_6t5aa"]
 [ext_resource type="Texture2D" uid="uid://dqq5r8k5fmji" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeR.png" id="4_8erm5"]
 [ext_resource type="Texture2D" uid="uid://p0l22jx1g27v" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeB.png" id="4_vgqql"]
@@ -159,6 +160,7 @@ animations = [{
 
 [node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("empty_charge_sprite_1", "empty_charge_sprite_2", "empty_charge_sprite_3")]
 script = ExtResource("1_cvnsp")
+air_puff_scene = ExtResource("2_pu2lt")
 charge_texture_1 = ExtResource("4_vgqql")
 charge_texture_2 = ExtResource("5_x3wgy")
 charge_texture_3 = ExtResource("4_8erm5")

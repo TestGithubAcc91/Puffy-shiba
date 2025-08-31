@@ -9,6 +9,10 @@ const HIGH_JUMP_VELOCITY = -350.0
 @onready var health_script = $HealthScript
 @onready var parry_label: Label = $Late_EarlyLabel
 
+# Air puff effect for dash
+@export var air_puff_scene: PackedScene
+@export var air_puffV_scene: PackedScene
+
 var flicker_timer: Timer
 var is_flickering: bool = false
 @export var flicker_interval: float = 0.1
@@ -173,6 +177,64 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 	
 	move_and_slide()
+
+func spawn_air_puff():
+	if air_puff_scene:
+		var air_puff = air_puff_scene.instantiate()
+		get_parent().add_child(air_puff)
+		
+		# Position the air puff 3 pixels higher than player position
+		air_puff.global_position = global_position + Vector2(0, -6)
+		
+		# Optional: Flip the air puff based on dash direction
+		if air_puff.has_method("set_direction"):
+			air_puff.set_direction(dash_direction)
+		elif air_puff is AnimatedSprite2D:
+			air_puff.flip_h = (dash_direction.x < 0)
+		
+		# Remove the air puff after animation finishes
+		if air_puff is AnimatedSprite2D:
+			# Connect to animation_finished signal to remove the puff
+			air_puff.animation_finished.connect(func(): air_puff.queue_free())
+			# Also add a safety timer in case the animation doesn't have an end
+			var cleanup_timer = Timer.new()
+			cleanup_timer.wait_time = 2.0  # Fallback cleanup after 2 seconds
+			cleanup_timer.one_shot = true
+			cleanup_timer.timeout.connect(func(): 
+				if is_instance_valid(air_puff):
+					air_puff.queue_free()
+				cleanup_timer.queue_free()
+			)
+			air_puff.add_child(cleanup_timer)
+			cleanup_timer.start()
+			
+func spawn_air_puffV():
+	if air_puffV_scene:
+		var air_puff = air_puffV_scene.instantiate()
+		get_parent().add_child(air_puff)
+		
+		# Position the air puff 6 pixels higher than player position
+		air_puff.global_position = global_position + Vector2(0, -6)
+		
+		# Ensure the rotation is applied (90 degrees for vertical orientation)
+		air_puff.rotation_degrees = -90
+		
+		# Remove the air puff after animation finishes
+		if air_puff is AnimatedSprite2D:
+			# Connect to animation_finished signal to remove the puff
+			air_puff.animation_finished.connect(func(): air_puff.queue_free())
+			# Also add a safety timer in case the animation doesn't have an end
+			var cleanup_timer = Timer.new()
+			cleanup_timer.wait_time = 2.0  # Fallback cleanup after 2 seconds
+			cleanup_timer.one_shot = true
+			cleanup_timer.timeout.connect(func(): 
+				if is_instance_valid(air_puff):
+					air_puff.queue_free()
+				cleanup_timer.queue_free()
+			)
+			air_puff.add_child(cleanup_timer)
+			cleanup_timer.start()
+			
 
 func _ready():
 	health_script.died.connect(_on_player_died)
@@ -501,6 +563,9 @@ func activate_dash():
 	is_dashing = true
 	can_dash = false
 	
+	# Spawn air puff effect at player position
+	spawn_air_puff()
+	
 	# Start dash animation
 	animated_sprite.play("Dash")
 	
@@ -522,6 +587,8 @@ func activate_high_jump():
 	
 	can_high_jump = false
 	high_jump_cooldown_timer.start()
+	
+	spawn_air_puffV()
 
 func _on_high_jump_cooldown_timeout():
 	can_high_jump = true

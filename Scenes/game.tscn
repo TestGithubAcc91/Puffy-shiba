@@ -1,8 +1,9 @@
-[gd_scene load_steps=31 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=26 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
 [ext_resource type="Texture2D" uid="uid://3ofgthge4i5c" path="res://Assets/sprites/world_tileset.png" id="2_qxrlw"]
+[ext_resource type="PackedScene" uid="uid://bbgbw33ksf1q3" path="res://Scenes/air_puff_V.tscn" id="3_nb51f"]
 [ext_resource type="PackedScene" uid="uid://dcdvbgcpw0scp" path="res://Scenes/platform.tscn" id="3_wrm1d"]
 [ext_resource type="PackedScene" uid="uid://bp1jjjj6d1sce" path="res://Scenes/coin.tscn" id="4_3dryh"]
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="5_wowpa"]
@@ -14,7 +15,6 @@
 [ext_resource type="Texture2D" uid="uid://bbthv78mei3lb" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP2.png" id="11_rfjv2"]
 [ext_resource type="Texture2D" uid="uid://de2orudnm0dbm" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP1.png" id="12_1phco"]
 [ext_resource type="Texture2D" uid="uid://bhhpohq32ugvh" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHPFade.png" id="13_1phco"]
-[ext_resource type="Texture2D" uid="uid://df6jlyq0wexe6" path="res://Assets/sprites/PlayerSprites/airPuff.png" id="15_nb51f"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -480,42 +480,6 @@ texture = ExtResource("2_qxrlw")
 physics_layer_0/collision_layer = 1
 sources/1 = SubResource("TileSetAtlasSource_wrm1d")
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_nnt18"]
-atlas = ExtResource("15_nb51f")
-region = Rect2(0, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ewbju"]
-atlas = ExtResource("15_nb51f")
-region = Rect2(16, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_85qyi"]
-atlas = ExtResource("15_nb51f")
-region = Rect2(32, 0, 16, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_iivbl"]
-atlas = ExtResource("15_nb51f")
-region = Rect2(48, 0, 16, 16)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_7nbq1"]
-animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_nnt18")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ewbju")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_85qyi")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_iivbl")
-}],
-"loop": false,
-"name": &"default",
-"speed": 10.0
-}]
-
 [node name="Game" type="Node2D"]
 
 [node name="GameManager" type="Node" parent="."]
@@ -526,6 +490,7 @@ script = ExtResource("1_v158k")
 z_index = 1
 position = Vector2(0, -16)
 collision_layer = 2
+air_puffV_scene = ExtResource("3_nb51f")
 dash_distance = 90.0
 dash_speed = 300.0
 wall_bounce_force = Vector2(700, -300)
@@ -641,11 +606,3 @@ expand_mode = 2
 layout_mode = 2
 texture = ExtResource("9_h4fw4")
 expand_mode = 2
-
-[node name="AirPuff" type="AnimatedSprite2D" parent="."]
-position = Vector2(-14, -17)
-rotation = -1.57959
-sprite_frames = SubResource("SpriteFrames_7nbq1")
-autoplay = "default"
-frame = 3
-frame_progress = 1.0
