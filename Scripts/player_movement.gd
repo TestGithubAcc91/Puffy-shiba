@@ -13,9 +13,6 @@ const HIGH_JUMP_VELOCITY = -350.0
 @export var air_puff_scene: PackedScene
 @export var air_puffV_scene: PackedScene
 
-var flicker_timer: Timer
-var is_flickering: bool = false
-@export var flicker_interval: float = 0.1
 
 var parry_timer: Timer
 var parry_early_timer: Timer
@@ -254,11 +251,7 @@ func _ready():
 	dash_duration = dash_distance / dash_speed
 	bounce_duration = bounce_distance / bounce_speed
 	
-	flicker_timer = Timer.new()
-	flicker_timer.wait_time = flicker_interval
-	flicker_timer.timeout.connect(_on_flicker_timeout)
-	add_child(flicker_timer)
-	
+
 	parry_timer = Timer.new()
 	parry_timer.wait_time = parry_duration
 	parry_timer.one_shot = true
@@ -653,35 +646,23 @@ func _on_iframe_started():
 	if not is_parrying:
 		recently_took_damage = true
 		damage_timer.start()
-		is_flickering = true
-		flicker_timer.start()
+		# Remove flicker logic - now handled by Health script
 	else:
 		recently_took_damage = true
 		damage_timer.start()
 
 func _on_iframe_ended():
-	if not is_parrying:
-		is_flickering = false
-		flicker_timer.stop()
-		animated_sprite.modulate.a = 1.0
+	pass
 
-func _on_flicker_timeout():
-	if is_flickering:
-		if animated_sprite.modulate.a > 0.5:
-			animated_sprite.modulate.a = 0.3
-		else:
-			animated_sprite.modulate.a = 1.0
-		
-		flicker_timer.start()
+
 
 func _on_player_died():
-	is_flickering = false
+	# Remove is_flickering = false and flicker_timer.stop()
 	is_parrying = false
 	is_dashing = false
 	is_bouncing = false
 	is_in_parry_freeze = false
 	is_in_pre_freeze_parry = false
-	flicker_timer.stop()
 	parry_timer.stop()
 	parry_cooldown_timer.stop()
 	parry_freeze_timer.stop()
@@ -689,7 +670,7 @@ func _on_player_died():
 	dash_timer.stop()
 	dash_cooldown_timer.stop()
 	bounce_timer.stop()
-	animated_sprite.modulate.a = 1.0
+	animated_sprite.modulate.a = 1.0  # Keep this to reset sprite
 	pending_bounce_direction = 0.0
 	bounce_direction_vector = Vector2.ZERO
 	
