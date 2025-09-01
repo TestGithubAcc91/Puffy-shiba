@@ -39,6 +39,16 @@ func deal_damage_to_player(player: Node2D):
 		# If this attack is unparryable, force damage through
 		var force_ignore_iframes = ignore_iframes or (unparryable and is_player_parrying)
 		
+		# NEW: Tell the player if this attack was unparryable before dealing damage
+		# Set this flag BEFORE any damage or signals are triggered
+		if player.has_method("set_last_attack_unparryable"):
+			if unparryable and is_player_parrying:
+				player.set_last_attack_unparryable(true)
+				print("Set unparryable flag to TRUE for player")
+			else:
+				player.set_last_attack_unparryable(false)
+				print("Set unparryable flag to FALSE for player")
+		
 		# Attempt to deal damage
 		health_component.take_damage(damage_amount, force_ignore_iframes)
 		

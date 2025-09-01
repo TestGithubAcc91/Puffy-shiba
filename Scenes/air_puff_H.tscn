@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://cw3hs2qsg2k4t"]
 
-[ext_resource type="Texture2D" uid="uid://df6jlyq0wexe6" path="res://Assets/sprites/PlayerSprites/airPuff.png" id="1_cbhux"]
+[ext_resource type="Texture2D" uid="uid://df6jlyq0wexe6" path="res://Assets/sprites/VFXSprites/airPuff.png" id="1_cbhux"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_nnt18"]
 atlas = ExtResource("1_cbhux")

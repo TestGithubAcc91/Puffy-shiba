@@ -13,6 +13,7 @@ const HIGH_JUMP_VELOCITY = -350.0
 @export var air_puff_scene: PackedScene
 @export var air_puffV_scene: PackedScene
 
+var last_attack_was_unparryable: bool = false
 
 var parry_timer: Timer
 var parry_early_timer: Timer
@@ -347,6 +348,7 @@ func activate_parry():
 	is_parrying = true
 	can_parry = false
 	parry_was_successful = false
+	last_attack_was_unparryable = false  # Reset the flag when starting a new parry
 	
 	health_script.is_invulnerable = true
 	
@@ -382,7 +384,8 @@ func _on_parry_timeout():
 		parry_cooldown_timer.start()
 
 func _on_parry_early_timeout():
-	if is_parrying and not parry_was_successful and parry_label:
+	# Only show "Late!" text if the attack was parryable
+	if is_parrying and not parry_was_successful and parry_label and not last_attack_was_unparryable:
 		parry_label.text = "Late!"
 		parry_label.visible = true
 		parry_label.modulate.a = 1.0
@@ -633,7 +636,8 @@ func _on_dash_cooldown_timeout():
 	can_dash = true
 
 func _on_iframe_started():
-	if recently_parry_ended and parry_label:
+	# Only show "Early!" text if the attack was parryable
+	if recently_parry_ended and parry_label and not last_attack_was_unparryable:
 		parry_label.text = "Early!"
 		parry_label.visible = true
 		parry_label.modulate.a = 1.0
@@ -654,7 +658,8 @@ func _on_iframe_started():
 func _on_iframe_ended():
 	pass
 
-
+func set_last_attack_unparryable(unparryable: bool):
+	last_attack_was_unparryable = unparryable
 
 func _on_player_died():
 	# Remove is_flickering = false and flicker_timer.stop()

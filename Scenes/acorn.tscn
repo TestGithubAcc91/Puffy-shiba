@@ -1,18 +1,73 @@
-[gd_scene load_steps=5 format=3 uid="uid://ds5edxjso5rsu"]
+[gd_scene load_steps=12 format=3 uid="uid://ds5edxjso5rsu"]
 
 [ext_resource type="Script" uid="uid://ci3fpg3p2105x" path="res://Scripts/acorn.gd" id="1_7sqex"]
 [ext_resource type="Texture2D" uid="uid://bog7v4oto05d2" path="res://Assets/sprites/EnemySprites/acorn.png" id="1_dtqib"]
+[ext_resource type="Texture2D" uid="uid://b5ro8sinimot7" path="res://Assets/sprites/VFXSprites/smokePuff.png" id="2_5ryjs"]
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="2_76pf4"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nyyjb"]
+atlas = ExtResource("2_5ryjs")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ps4mp"]
+atlas = ExtResource("2_5ryjs")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oo2mo"]
+atlas = ExtResource("2_5ryjs")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6b3av"]
+atlas = ExtResource("2_5ryjs")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wv3r8"]
+atlas = ExtResource("2_5ryjs")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_m5rsc"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nyyjb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ps4mp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oo2mo")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6b3av")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wv3r8")
+}],
+"loop": false,
+"name": &"Disappear",
+"speed": 9.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_dtqib")
+}],
+"loop": true,
+"name": &"Idle",
+"speed": 5.0
+}]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_7sqex"]
 radius = 3.0
 
 [node name="Acorn" type="Node2D"]
 script = ExtResource("1_7sqex")
-speed = 100.0
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_dtqib")
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_m5rsc")
+animation = &"Disappear"
+autoplay = "Idle"
+frame = 4
+frame_progress = 1.0
 
 [node name="KillzoneScript_Area" parent="." instance=ExtResource("2_76pf4")]
 

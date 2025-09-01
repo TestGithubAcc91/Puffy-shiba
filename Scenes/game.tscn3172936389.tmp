@@ -563,7 +563,7 @@ tile_set = SubResource("TileSet_3dryh")
 position = Vector2(444, 15)
 
 [node name="Acopter" parent="LevelHolder/EnemyHolder" instance=ExtResource("16_nnt18")]
-position = Vector2(393, -9)
+position = Vector2(122, -55)
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0
