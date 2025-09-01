@@ -68,7 +68,7 @@ var assigned_textures: Array[Texture2D] = []
 
 @export var dash_distance: float = 200.0
 @export var dash_speed: float = 800.0
-@export var dash_cooldown: float = 1.0
+@export var dash_cooldown: float = 0.5
 @export var wall_bounce_force: Vector2 = Vector2(300.0, -150.0)
 @export var bounce_delay: float = 0.2
 @export var bounce_distance: float = 150.0
@@ -96,7 +96,7 @@ var bounce_direction_vector: Vector2 = Vector2.ZERO
 func _physics_process(delta: float) -> void:
 	# No physics blocking - let time_scale handle the freeze
 	
-	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 2:
+	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1:
 		activate_dash()
 	
 	if is_dashing:
@@ -547,10 +547,10 @@ func activate_dash():
 	if not can_dash or is_dashing:
 		return
 	
-	if current_parry_stacks < 2:
+	if current_parry_stacks < 1:
 		return
 	
-	current_parry_stacks -= 2
+	current_parry_stacks -= 1
 	parry_stacks_changed.emit(current_parry_stacks)
 	update_charge_sprites()
 	
@@ -699,5 +699,3 @@ func _on_player_died():
 	
 	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()
-	
-	

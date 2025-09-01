@@ -562,9 +562,13 @@ tile_set = SubResource("TileSet_3dryh")
 
 [node name="Clover" parent="LevelHolder/EnemyHolder" instance=ExtResource("6_i6g32")]
 position = Vector2(444, 15)
+vertical_movement_enabled = false
+circular_movement_enabled = true
 
 [node name="Acopter" parent="LevelHolder/EnemyHolder" instance=ExtResource("16_nnt18")]
-position = Vector2(393, -9)
+position = Vector2(391, -21)
+vertical_distance = 20.0
+vertical_speed = 50.0
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

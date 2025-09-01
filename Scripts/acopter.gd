@@ -4,10 +4,20 @@ extends Node2D
 @export var spawn_offset: Vector2 = Vector2(0, 4)  # Offset from helicopter center to spawn acorns
 @export var facing_left: bool = false  # Toggle for direction
 
+# Vertical movement properties
+@export var vertical_movement_enabled: bool = true  # Toggle vertical movement on/off
+@export var vertical_distance: float = 50.0  # Distance to move up and down
+@export var vertical_speed: float = 30.0  # Speed of vertical movement
+
 var fire_timer: Timer
 var animated_sprite: AnimatedSprite2D
+var initial_position: Vector2
+var moving_up: bool = true
 
 func _ready():
+	# Store the initial position for vertical movement reference
+	initial_position = position
+	
 	# Get the AnimatedSprite2D node (assumes it's a child of this node)
 	animated_sprite = get_node("AnimatedSprite2D")
 	
@@ -21,7 +31,26 @@ func _ready():
 	fire_timer.timeout.connect(_on_fire_timer_timeout)
 	add_child(fire_timer)
 
+func _process(delta):
+	# Handle vertical movement if enabled
+	if vertical_movement_enabled:
+		handle_vertical_movement(delta)
 
+func handle_vertical_movement(delta):
+	var movement = vertical_speed * delta
+	
+	if moving_up:
+		position.y -= movement
+		# Check if we've reached the upper limit
+		if position.y <= initial_position.y - vertical_distance:
+			position.y = initial_position.y - vertical_distance
+			moving_up = false
+	else:
+		position.y += movement
+		# Check if we've reached the lower limit
+		if position.y >= initial_position.y + vertical_distance:
+			position.y = initial_position.y + vertical_distance
+			moving_up = true
 
 func toggle_direction():
 	facing_left = !facing_left
@@ -30,6 +59,12 @@ func toggle_direction():
 func update_facing_direction():
 	if animated_sprite:
 		animated_sprite.flip_h = facing_left
+
+func toggle_vertical_movement():
+	vertical_movement_enabled = !vertical_movement_enabled
+	# Reset to initial position when disabling movement
+	if not vertical_movement_enabled:
+		position.y = initial_position.y
 
 func _on_fire_timer_timeout():
 	# Start the shooting sequence if the scene is assigned

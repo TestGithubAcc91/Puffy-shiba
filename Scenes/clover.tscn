@@ -1,9 +1,10 @@
-[gd_scene load_steps=10 format=3 uid="uid://b2vrnra2k4b62"]
+[gd_scene load_steps=11 format=3 uid="uid://b2vrnra2k4b62"]
 
 [ext_resource type="Script" uid="uid://bpaaursrp8ll0" path="res://Scripts/clover.gd" id="1_aiwxb"]
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="2_aiwxb"]
 [ext_resource type="Texture2D" uid="uid://7unu6cpkdyak" path="res://Assets/sprites/EnemySprites/cloverIdle.png" id="2_e75hx"]
 [ext_resource type="Texture2D" uid="uid://durhawqgmqonb" path="res://Assets/sprites/EnemySprites/cloverSpiked.png" id="3_rmcxx"]
+[ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="5_v6fci"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_rmcxx"]
 atlas = ExtResource("2_e75hx")
@@ -57,12 +58,14 @@ autoplay = "Idle"
 position = Vector2(0, 6)
 shape = SubResource("CircleShape2D_r4o34")
 
-[node name="RayCastRight" type="RayCast2D" parent="."]
-position = Vector2(0, 5)
-rotation = -1.5708
-target_position = Vector2(-4.76837e-07, 8)
-
-[node name="RayCastLeft" type="RayCast2D" parent="."]
-position = Vector2(0, 5)
-rotation = 1.5708
-target_position = Vector2(-4.76837e-07, 8)
+[node name="UnparryableWarning" type="Label" parent="."]
+visible = false
+offset_left = -3.0
+offset_top = -10.0
+offset_right = 37.0
+offset_bottom = 13.0
+theme_override_colors/font_color = Color(0.231373, 0.796078, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("5_v6fci")
+theme_override_font_sizes/font_size = 8
+text = "!"
