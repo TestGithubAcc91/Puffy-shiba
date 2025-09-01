@@ -348,7 +348,7 @@ func activate_parry():
 	is_parrying = true
 	can_parry = false
 	parry_was_successful = false
-	last_attack_was_unparryable = false  # Reset the flag when starting a new parry
+	# REMOVED: last_attack_was_unparryable = false  # Don't reset here!
 	
 	health_script.is_invulnerable = true
 	
@@ -360,6 +360,7 @@ func activate_parry():
 	if recently_took_damage:
 		parry_early_timer.start()
 	health_script.iframe_started.emit()
+
 
 func _on_parry_timeout():
 	is_parrying = false
@@ -376,6 +377,9 @@ func _on_parry_timeout():
 	
 	recently_parry_ended = true
 	parry_end_timer.start()
+	
+	# Reset the unparryable flag when parry window fully ends
+	last_attack_was_unparryable = false
 	
 	if parry_was_successful:
 		can_parry = true
@@ -452,6 +456,9 @@ func _on_late_fade_tick():
 func on_parry_success():
 	parry_was_successful = true
 	add_parry_stack()
+	
+	# Reset flag on successful parry
+	last_attack_was_unparryable = false
 	
 	# Start the parry animation sequence - set state first, then animation
 	is_in_pre_freeze_parry = true

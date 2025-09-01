@@ -520,6 +520,7 @@ position = Vector2(196, -7)
 position = Vector2(95, 68)
 damage_amount = 100
 ignore_iframes = true
+unparryable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/Void"]
 shape = SubResource("WorldBoundaryShape2D_i6g32")

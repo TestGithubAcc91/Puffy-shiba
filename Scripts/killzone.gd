@@ -1,9 +1,7 @@
 extends Area2D
-
 @export var damage_amount: int = 25
 @export var ignore_iframes: bool = false  # Toggle this to bypass player i-frames
 @export var unparryable: bool = false     # NEW: Toggle this to make attacks unparryable
-
 # Parry freeze effect settings
 @export var parry_freeze_duration: float = 0.2  # How long to freeze on successful parry
 @export var parry_freeze_time_scale: float = 0.0  # How slow time becomes (0.0 = complete freeze)
@@ -33,21 +31,16 @@ func deal_damage_to_player(player: Node2D):
 		
 		print("Dealing ", damage_amount, " damage to player (ignore i-frames: ", ignore_iframes, ", player parrying: ", is_player_parrying, ", unparryable: ", unparryable, ")")
 		
+		# CRITICAL FIX: Set the unparryable flag BEFORE any damage processing
+		if player.has_method("set_last_attack_unparryable"):
+			player.set_last_attack_unparryable(unparryable)
+			print("Set unparryable flag to: ", unparryable)
+		
 		# Store the player's health before damage attempt
 		var health_before = health_component.current_health
 		
 		# If this attack is unparryable, force damage through
 		var force_ignore_iframes = ignore_iframes or (unparryable and is_player_parrying)
-		
-		# NEW: Tell the player if this attack was unparryable before dealing damage
-		# Set this flag BEFORE any damage or signals are triggered
-		if player.has_method("set_last_attack_unparryable"):
-			if unparryable and is_player_parrying:
-				player.set_last_attack_unparryable(true)
-				print("Set unparryable flag to TRUE for player")
-			else:
-				player.set_last_attack_unparryable(false)
-				print("Set unparryable flag to FALSE for player")
 		
 		# Attempt to deal damage
 		health_component.take_damage(damage_amount, force_ignore_iframes)
