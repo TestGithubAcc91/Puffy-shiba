@@ -1,7 +1,9 @@
-[gd_scene load_steps=10 format=3 uid="uid://c5dckssmfxqgb"]
+[gd_scene load_steps=12 format=3 uid="uid://c5dckssmfxqgb"]
 
+[ext_resource type="Script" uid="uid://7nkcjwvouidc" path="res://Scripts/acopter.gd" id="1_f352p"]
 [ext_resource type="Texture2D" uid="uid://d2ss77u63puhr" path="res://Assets/sprites/EnemySprites/acopterIdle.png" id="1_pcn1x"]
 [ext_resource type="Texture2D" uid="uid://gm5pswbmxofu" path="res://Assets/sprites/EnemySprites/acopterShoot.png" id="2_4o4io"]
+[ext_resource type="PackedScene" uid="uid://ds5edxjso5rsu" path="res://Scenes/acorn.tscn" id="2_wdkgn"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4o4io"]
 atlas = ExtResource("1_pcn1x")
@@ -59,6 +61,8 @@ animations = [{
 }]
 
 [node name="Acopter" type="Node2D"]
+script = ExtResource("1_f352p")
+acorn_scene = ExtResource("2_wdkgn")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_4jgx4")

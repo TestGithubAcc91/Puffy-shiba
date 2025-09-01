@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3 uid="uid://ds5edxjso5rsu"]
+
+[ext_resource type="Script" uid="uid://ci3fpg3p2105x" path="res://Scripts/acorn.gd" id="1_7sqex"]
+[ext_resource type="Texture2D" uid="uid://bog7v4oto05d2" path="res://Assets/sprites/EnemySprites/acorn.png" id="1_dtqib"]
+[ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="2_76pf4"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7sqex"]
+radius = 3.0
+
+[node name="Acorn" type="Node2D"]
+script = ExtResource("1_7sqex")
+speed = 100.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_dtqib")
+
+[node name="KillzoneScript_Area" parent="." instance=ExtResource("2_76pf4")]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KillzoneScript_Area"]
+shape = SubResource("CircleShape2D_7sqex")

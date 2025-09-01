@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=28 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://de2orudnm0dbm" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP1.png" id="12_1phco"]
 [ext_resource type="Texture2D" uid="uid://bhhpohq32ugvh" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHPFade.png" id="13_1phco"]
 [ext_resource type="PackedScene" uid="uid://c5dckssmfxqgb" path="res://Scenes/acopter.tscn" id="16_nnt18"]
+[ext_resource type="PackedScene" uid="uid://ds5edxjso5rsu" path="res://Scenes/acorn.tscn" id="17_ewbju"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -610,3 +611,6 @@ expand_mode = 2
 
 [node name="Acopter" parent="." instance=ExtResource("16_nnt18")]
 position = Vector2(122, -55)
+
+[node name="Acorn" parent="." instance=ExtResource("17_ewbju")]
+position = Vector2(72, -17)
