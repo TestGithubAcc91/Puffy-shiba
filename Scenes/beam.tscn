@@ -1,0 +1,42 @@
+[gd_scene load_steps=7 format=3 uid="uid://xnuk6x05vok"]
+
+[ext_resource type="Texture2D" uid="uid://bxi1f8ma3kt4k" path="res://Assets/sprites/EnemySprites/beam_Y.png" id="1_f22xp"]
+[ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="2_b76qd"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b76qd"]
+atlas = ExtResource("1_f22xp")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oyrmj"]
+atlas = ExtResource("1_f22xp")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_kcke3"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_b76qd")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_oyrmj")
+}],
+"loop": true,
+"name": &"default",
+"speed": 10.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_7uw3i"]
+size = Vector2(12, 16)
+
+[node name="Beam" type="Node2D"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+z_index = -1
+sprite_frames = SubResource("SpriteFrames_kcke3")
+autoplay = "default"
+frame_progress = 0.140974
+
+[node name="KillzoneScript_Area" parent="." instance=ExtResource("2_b76qd")]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KillzoneScript_Area"]
+shape = SubResource("RectangleShape2D_7uw3i")

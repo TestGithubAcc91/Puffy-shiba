@@ -1,0 +1,56 @@
+[gd_scene load_steps=9 format=3 uid="uid://6h362foug0m3"]
+
+[ext_resource type="Texture2D" uid="uid://5u2ka5vyf3no" path="res://Assets/sprites/EnemySprites/beamer.png" id="1_0tdxm"]
+[ext_resource type="Script" uid="uid://bfwv2bcvtioni" path="res://Scripts/beamer.gd" id="1_b06mb"]
+[ext_resource type="PackedScene" uid="uid://xnuk6x05vok" path="res://Scenes/beam.tscn" id="2_380w4"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yp3ta"]
+atlas = ExtResource("1_0tdxm")
+region = Rect2(96, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b06mb"]
+atlas = ExtResource("1_0tdxm")
+region = Rect2(0, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_380w4"]
+atlas = ExtResource("1_0tdxm")
+region = Rect2(32, 0, 32, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_o4xrs"]
+atlas = ExtResource("1_0tdxm")
+region = Rect2(64, 0, 32, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_yp3ta"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yp3ta")
+}],
+"loop": true,
+"name": &"Shoot",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_b06mb")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_380w4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_o4xrs")
+}],
+"loop": true,
+"name": &"default",
+"speed": 2.0
+}]
+
+[node name="Beamer" type="Node2D"]
+script = ExtResource("1_b06mb")
+beam_scene = ExtResource("2_380w4")
+beam_count = 11
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_yp3ta")
+animation = &"Shoot"
+autoplay = "default"
