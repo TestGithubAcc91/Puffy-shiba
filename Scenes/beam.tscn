@@ -34,7 +34,7 @@ size = Vector2(12, 16)
 z_index = -1
 sprite_frames = SubResource("SpriteFrames_kcke3")
 autoplay = "default"
-frame_progress = 0.140974
+frame_progress = 0.0821707
 
 [node name="KillzoneScript_Area" parent="." instance=ExtResource("2_b76qd")]
 

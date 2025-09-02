@@ -69,6 +69,7 @@ func create_beam():
 		
 		beam_instances.append(beam_instance)
 
+
 func destroy_beam():
 	for beam in beam_instances:
 		if is_instance_valid(beam):

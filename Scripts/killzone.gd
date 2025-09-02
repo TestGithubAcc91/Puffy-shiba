@@ -5,7 +5,6 @@ extends Area2D
 # Parry freeze effect settings
 @export var parry_freeze_duration: float = 0.2  # How long to freeze on successful parry
 @export var parry_freeze_time_scale: float = 0.0  # How slow time becomes (0.0 = complete freeze)
-
 func _on_body_entered(body: Node2D):
 	print("Body entered damage zone: ", body.name)
 	

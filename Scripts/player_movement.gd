@@ -363,7 +363,7 @@ func activate_parry():
 
 
 func _on_parry_timeout():
-	is_parrying = false
+	# Always end parry effects when timer expires (whether successful or not)
 	health_script.is_invulnerable = false
 	
 	if glint_sprite:
@@ -381,11 +381,13 @@ func _on_parry_timeout():
 	# Reset the unparryable flag when parry window fully ends
 	last_attack_was_unparryable = false
 	
-	if parry_was_successful:
-		can_parry = true
-	else:
+	# Only set parry cooldown if it wasn't successful
+	if not parry_was_successful:
+		is_parrying = false  # End parrying state if not already ended by success
 		parry_cooldown_timer.wait_time = parry_fail_cooldown
 		parry_cooldown_timer.start()
+	else:
+		can_parry = true
 
 func _on_parry_early_timeout():
 	# Only show "Late!" text if the attack was parryable
@@ -459,6 +461,10 @@ func on_parry_success():
 	
 	# Reset flag on successful parry
 	last_attack_was_unparryable = false
+	
+	# CRITICAL CHANGE: End parrying state immediately but keep iframes
+	is_parrying = false
+	can_parry = true  # Allow immediate parrying again
 	
 	# Start the parry animation sequence - set state first, then animation
 	is_in_pre_freeze_parry = true
