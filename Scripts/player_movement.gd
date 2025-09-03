@@ -235,9 +235,11 @@ func spawn_air_puffV():
 			
 
 func _ready():
+	# Connect to health script's damage signal instead of iframe signals
 	health_script.died.connect(_on_player_died)
-	health_script.iframe_started.connect(_on_iframe_started)
-	health_script.iframe_ended.connect(_on_iframe_ended)
+	# Connect to a new damage_taken signal we'll add to the health script
+	if health_script.has_signal("damage_taken"):
+		health_script.damage_taken.connect(_on_damage_taken)
 	
 	setup_charge_system()
 	
@@ -359,8 +361,6 @@ func activate_parry():
 	parry_timer.start()
 	if recently_took_damage:
 		parry_early_timer.start()
-	health_script.iframe_started.emit()
-
 
 func _on_parry_timeout():
 	# Always end parry effects when timer expires (whether successful or not)
@@ -372,8 +372,6 @@ func _on_parry_timeout():
 	
 	if parry_early_timer.time_left > 0:
 		parry_early_timer.stop()
-	
-	health_script.iframe_ended.emit()
 	
 	recently_parry_ended = true
 	parry_end_timer.start()
@@ -648,8 +646,12 @@ func _on_dash_timeout():
 func _on_dash_cooldown_timeout():
 	can_dash = true
 
-func _on_iframe_started():
-	# Only show "Early!" text if the attack was parryable
+# NEW: This function will be called when the player actually takes damage
+func _on_damage_taken():
+	recently_took_damage = true
+	damage_timer.start()
+	
+	# Check if this should show "Early!" text
 	if recently_parry_ended and parry_label and not last_attack_was_unparryable:
 		parry_label.text = "Early!"
 		parry_label.visible = true
@@ -658,18 +660,6 @@ func _on_iframe_started():
 		is_fading_early_text = false
 		early_text_timer.start()
 		recently_parry_ended = false
-		return
-	
-	if not is_parrying:
-		recently_took_damage = true
-		damage_timer.start()
-		# Remove flicker logic - now handled by Health script
-	else:
-		recently_took_damage = true
-		damage_timer.start()
-
-func _on_iframe_ended():
-	pass
 
 func set_last_attack_unparryable(unparryable: bool):
 	last_attack_was_unparryable = unparryable

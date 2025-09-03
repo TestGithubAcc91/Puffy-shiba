@@ -5,6 +5,7 @@ signal health_changed(new_health: int)
 signal died
 signal iframe_started
 signal iframe_ended
+signal damage_taken  # NEW: Signal emitted when player actually takes damage
 
 @export var max_health: int = 100
 @export var current_health: int = 100
@@ -53,6 +54,9 @@ func take_damage(amount: int, ignore_iframes: bool = false):
 	current_health = max(0, current_health - amount)
 	print("Health after damage: ", current_health)
 	health_changed.emit(current_health)
+	
+	# NEW: Emit damage_taken signal when player actually takes damage
+	damage_taken.emit()
 	
 	# ALWAYS grant invulnerability and start visual iframes after taking damage
 	# This ensures the player gets iframes even when parrying unparryable attacks

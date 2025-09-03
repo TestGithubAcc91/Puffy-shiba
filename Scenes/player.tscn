@@ -169,6 +169,7 @@ empty_charge_texture = ExtResource("8_f1ek2")
 empty_charge_sprite_1 = NodePath("ParryCharge1")
 empty_charge_sprite_2 = NodePath("ParryCharge2")
 empty_charge_sprite_3 = NodePath("ParryCharge3")
+dash_cooldown = 0.35
 
 [node name="MainSprite" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -7)

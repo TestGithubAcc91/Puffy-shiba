@@ -573,6 +573,7 @@ vertical_speed = 50.0
 
 [node name="Beamer" parent="LevelHolder/EnemyHolder" instance=ExtResource("10_ewbju")]
 position = Vector2(245, -7)
+direction = 2
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0
