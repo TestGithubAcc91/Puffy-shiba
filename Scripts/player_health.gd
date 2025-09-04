@@ -1,11 +1,11 @@
 extends Node
 class_name Health
-
 signal health_changed(new_health: int)
 signal died
 signal iframe_started
 signal iframe_ended
-signal damage_taken  # NEW: Signal emitted when player actually takes damage
+signal damage_taken  # Signal emitted when player actually takes damage
+signal health_decreased  # NEW: Signal emitted only when health actually decreases
 
 @export var max_health: int = 100
 @export var current_health: int = 100
@@ -16,7 +16,6 @@ var is_invulnerable: bool = false
 var iframe_timer: Timer
 var flicker_timer: Timer
 var is_flickering: bool = false
-
 # Reference to the animated sprite for flickering
 var animated_sprite: AnimatedSprite2D
 
@@ -42,6 +41,9 @@ func _ready():
 	add_child(flicker_timer)
 
 func take_damage(amount: int, ignore_iframes: bool = false):
+	# Store health before damage
+	var health_before = current_health
+	
 	# Check if damage should be blocked by existing iframes (only when not ignoring them)
 	if is_invulnerable and not ignore_iframes:
 		print("Player is invulnerable, damage blocked!")
@@ -55,7 +57,11 @@ func take_damage(amount: int, ignore_iframes: bool = false):
 	print("Health after damage: ", current_health)
 	health_changed.emit(current_health)
 	
-	# NEW: Emit damage_taken signal when player actually takes damage
+	# NEW: Only emit health_decreased if health actually went down
+	if current_health < health_before:
+		health_decreased.emit()
+	
+	# Always emit damage_taken when damage function is called
 	damage_taken.emit()
 	
 	# ALWAYS grant invulnerability and start visual iframes after taking damage

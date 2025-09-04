@@ -232,14 +232,13 @@ func spawn_air_puffV():
 			)
 			air_puff.add_child(cleanup_timer)
 			cleanup_timer.start()
-			
 
 func _ready():
 	# Connect to health script's damage signal instead of iframe signals
 	health_script.died.connect(_on_player_died)
-	# Connect to a new damage_taken signal we'll add to the health script
-	if health_script.has_signal("damage_taken"):
-		health_script.damage_taken.connect(_on_damage_taken)
+	# CHANGED: Connect to health_decreased instead of damage_taken for parry feedback
+	if health_script.has_signal("health_decreased"):
+		health_script.health_decreased.connect(_on_health_decreased)
 	
 	setup_charge_system()
 	
@@ -254,7 +253,6 @@ func _ready():
 	dash_duration = dash_distance / dash_speed
 	bounce_duration = bounce_distance / bounce_speed
 	
-
 	parry_timer = Timer.new()
 	parry_timer.wait_time = parry_duration
 	parry_timer.one_shot = true
@@ -646,8 +644,8 @@ func _on_dash_timeout():
 func _on_dash_cooldown_timeout():
 	can_dash = true
 
-# NEW: This function will be called when the player actually takes damage
-func _on_damage_taken():
+# CHANGED: This function now responds to health_decreased instead of damage_taken
+func _on_health_decreased():
 	recently_took_damage = true
 	damage_timer.start()
 	
