@@ -579,9 +579,8 @@ position = Vector2(245, -7)
 [node name="Vine" parent="LevelHolder" instance=ExtResource("18_85qyi")]
 position = Vector2(106, -106)
 scale = Vector2(2, 2)
-vine_length = 30.0
+vine_length = 40.0
 swing_force = 15.0
-grab_range = 5.0
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

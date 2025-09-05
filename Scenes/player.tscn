@@ -228,3 +228,4 @@ text = "Late!"
 [node name="VineComponent" type="Node" parent="."]
 script = ExtResource("13_ukyrk")
 slowdown_start_angle_degrees = 55.0
+return_force_strength = 199.0
