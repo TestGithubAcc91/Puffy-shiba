@@ -19,6 +19,7 @@ var player_in_grab_area: bool = false
 
 func _ready():
 	vine_anchor = global_position
+	# Make vine_bottom_position the exact center of where the grab area will be
 	vine_bottom_position = vine_anchor + Vector2(0, vine_length)
 	
 	create_detection_area()
@@ -33,14 +34,15 @@ func _ready():
 		texture = ImageTexture.create_from_image(image)
 
 func create_detection_area():
-	# Create detection area at the bottom of the vine
+	# Create detection area as a circle at the exact vine bottom position
 	detection_area = Area2D.new()
 	var collision_shape = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
 	shape.radius = grab_range
 	collision_shape.shape = shape
 	
-	# Position the detection area at the bottom of the vine
+	# Position the detection area at the vine bottom (relative to this node)
+	# Since vine_bottom_position is absolute, we need relative positioning
 	detection_area.position = Vector2(0, vine_length)
 	
 	# Set up Area2D properties
@@ -48,8 +50,8 @@ func create_detection_area():
 	detection_area.monitorable = false
 	
 	# Set collision mask to layer 2 (where the player is)
-	detection_area.collision_mask = 2  # This is layer 2 (binary: 10)
-	detection_area.collision_layer = 0  # Don't put the vine on any collision layer
+	detection_area.collision_mask = 2
+	detection_area.collision_layer = 0
 	
 	detection_area.add_child(collision_shape)
 	add_child(detection_area)
@@ -57,6 +59,8 @@ func create_detection_area():
 	# Connect signals
 	detection_area.body_entered.connect(_on_body_entered)
 	detection_area.body_exited.connect(_on_body_exited)
+	
+	print("Detection area created at relative position: ", detection_area.position, " with radius: ", grab_range)
 
 func create_grab_indicator():
 	grab_indicator = Sprite2D.new()
@@ -98,7 +102,8 @@ func update_debug_info():
 	
 	if player:
 		var distance = vine_anchor.distance_to(player.global_position)
-		debug_text += "Distance: " + str(int(distance)) + "\n"
+		debug_text += "Distance to Anchor: " + str(int(distance)) + "\n"
+		debug_text += "Grab Range: " + str(int(grab_range)) + "\n"
 		debug_text += "Player Pos: " + str(Vector2i(player.global_position))
 	else:
 		debug_text += "No Player\n"
@@ -124,12 +129,12 @@ func _draw():
 		# Draw vine bottom point
 		draw_circle(Vector2(0, vine_length), 6, Color.BLUE)
 		
-		# Draw grab range circle
+		# Draw grab range circle at the bottom
 		var grab_color = Color.GREEN
 		grab_color.a = 0.3
 		draw_circle(Vector2(0, vine_length), grab_range, grab_color)
 		
-		# Draw swing arc
+		# Draw swing arc from anchor
 		var arc_color = Color.YELLOW
 		arc_color.a = 0.2
 		draw_arc(Vector2.ZERO, vine_length, 0, TAU, 64, arc_color, 2.0)
@@ -142,7 +147,7 @@ func _on_body_entered(body):
 	print("Body entered vine grab area: ", body.name)
 	
 	if body.has_method("grab_vine"):
-		player = body  # Store reference to the player
+		player = body
 		player_in_grab_area = true
 		
 		# Notify the player's VineComponent about nearby vine
@@ -163,7 +168,7 @@ func _on_body_exited(body):
 			# Notify the player's VineComponent that vine is no longer nearby
 			if body.has_node("VineComponent"):
 				body.get_node("VineComponent").clear_nearby_vine(self)
-			player = null  # Clear player reference when they leave
+			player = null
 		player_in_grab_area = false
 		
 		# Hide grab indicator when player leaves range
@@ -173,6 +178,8 @@ func _on_body_exited(body):
 		print("Player left grab area of vine")
 
 func attach_player(p: CharacterBody2D):
+	# Since the detection area perfectly matches the grab area,
+	# if the player triggered the area, they're in grab range
 	player = p
 	is_player_grabbing = true
 	print("Player attached to vine. Vine anchor: ", vine_anchor, " Player pos: ", player.global_position)
