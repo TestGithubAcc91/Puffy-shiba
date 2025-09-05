@@ -1,0 +1,74 @@
+[gd_scene load_steps=11 format=3 uid="uid://dvkbi84fq61r4"]
+
+[ext_resource type="Texture2D" uid="uid://b0bc0340po5d7" path="res://Assets/sprites/VFXSprites/glit_pickup.png" id="1_l8iuq"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7au4p"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6wsmm"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yr4og"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7ya00"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_tpwlj"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_310v7"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(80, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4xulr"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(96, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_se08o"]
+atlas = ExtResource("1_l8iuq")
+region = Rect2(112, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_6vnc0"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7au4p")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6wsmm")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yr4og")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7ya00")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_tpwlj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_310v7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4xulr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_se08o")
+}],
+"loop": false,
+"name": &"default",
+"speed": 20.0
+}]
+
+[node name="GlitPickupVFX" type="AnimatedSprite2D"]
+z_index = 1
+sprite_frames = SubResource("SpriteFrames_6vnc0")
+autoplay = "default"
+frame = 7
+frame_progress = 1.0

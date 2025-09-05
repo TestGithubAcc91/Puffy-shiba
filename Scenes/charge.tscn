@@ -1,48 +1,12 @@
-[gd_scene load_steps=14 format=3 uid="uid://bp1jjjj6d1sce"]
+[gd_scene load_steps=16 format=3 uid="uid://beodtqr1g8lyc"]
 
-[ext_resource type="Script" uid="uid://b8b2aopgwxweo" path="res://Scripts/coin.gd" id="1_jgi06"]
-[ext_resource type="Texture2D" uid="uid://8awblypewxsh" path="res://Assets/sprites/InteractableSprites/glit.png" id="2_g537i"]
-[ext_resource type="PackedScene" uid="uid://dvkbi84fq61r4" path="res://Scenes/glit_pickup_vfx.tscn" id="2_h2p6v"]
-[ext_resource type="AudioStream" uid="uid://bol6tfjdxta4" path="res://Assets/sounds/coin.wav" id="3_g537i"]
+[ext_resource type="Texture2D" uid="uid://05nh2vx661pb" path="res://Assets/sprites/InteractableSprites/charge.png" id="1_kdiw5"]
+[ext_resource type="Script" uid="uid://bnjbeilp1gkcm" path="res://Scripts/charge.gd" id="1_qh2dw"]
+[ext_resource type="PackedScene" uid="uid://dvkbi84fq61r4" path="res://Scenes/glit_pickup_vfx.tscn" id="2_q51uj"]
+[ext_resource type="AudioStream" uid="uid://bol6tfjdxta4" path="res://Assets/sounds/coin.wav" id="4_8rcoy"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_jb3vm"]
 radius = 5.0
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_h2p6v"]
-atlas = ExtResource("2_g537i")
-region = Rect2(0, 0, 15, 15)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_ffmqm"]
-atlas = ExtResource("2_g537i")
-region = Rect2(15, 0, 15, 15)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_81h6x"]
-atlas = ExtResource("2_g537i")
-region = Rect2(30, 0, 15, 15)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_qbp07"]
-atlas = ExtResource("2_g537i")
-region = Rect2(45, 0, 15, 15)
-
-[sub_resource type="SpriteFrames" id="SpriteFrames_5cqbm"]
-animations = [{
-"frames": [{
-"duration": 10.0,
-"texture": SubResource("AtlasTexture_h2p6v")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_ffmqm")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_81h6x")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_qbp07")
-}],
-"loop": true,
-"name": &"default",
-"speed": 10.0
-}]
 
 [sub_resource type="Animation" id="Animation_ffmqm"]
 length = 0.001
@@ -142,27 +106,75 @@ _data = {
 &"pickup": SubResource("Animation_h2p6v")
 }
 
-[node name="Coin" type="Area2D"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_qh2dw"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q51uj"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8rcoy"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_igt17"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(48, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_amfuy"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(64, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ejlsy"]
+atlas = ExtResource("1_kdiw5")
+region = Rect2(80, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_rjyfm"]
+animations = [{
+"frames": [{
+"duration": 5.0,
+"texture": SubResource("AtlasTexture_qh2dw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_q51uj")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8rcoy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_igt17")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_amfuy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ejlsy")
+}],
+"loop": true,
+"name": &"default",
+"speed": 10.0
+}]
+
+[node name="Charge" type="Area2D"]
 collision_mask = 2
-script = ExtResource("1_jgi06")
-vfx_scene = ExtResource("2_h2p6v")
+script = ExtResource("1_qh2dw")
+vfx_scene = ExtResource("2_q51uj")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_jb3vm")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
-z_index = 1
-sprite_frames = SubResource("SpriteFrames_5cqbm")
-autoplay = "default"
-frame_progress = 0.566875
-
 [node name="AudioStreamPlayer2D" type="AudioStreamPlayer2D" parent="."]
-stream = ExtResource("3_g537i")
+stream = ExtResource("4_8rcoy")
 bus = &"SFX"
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_81h6x")
 }
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_rjyfm")
+autoplay = "default"
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]
