@@ -5,9 +5,10 @@ extends Area2D
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 func _on_body_entered(body: Node2D):
-	print("hi")
 	game_manager.add_point()
 	animation_player.play("pickup")
+	if body.has_method("add_parry_stack"):
+		body.add_parry_stack()
 	
 	# Spawn VFX if a scene is assigned
 	if vfx_scene:
