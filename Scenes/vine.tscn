@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://do0b3q7js88n6"]
+
+[ext_resource type="Texture2D" uid="uid://de2orudnm0dbm" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP1.png" id="1_e063k"]
+[ext_resource type="Script" uid="uid://dlkalf5ltu2gm" path="res://Scripts/vine.gd" id="2_6slj2"]
+
+[node name="Vine" type="Sprite2D"]
+texture = ExtResource("1_e063k")
+script = ExtResource("2_6slj2")

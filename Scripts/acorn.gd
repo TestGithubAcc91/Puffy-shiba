@@ -37,11 +37,11 @@ func _process(delta):
 	if not is_disappearing:
 		# Wall collision detection (like your enemy script)
 		if ray_cast_right.is_colliding() and not moving_left:
-			print("Acorn hit wall on right side")
+
 			start_disappear_sequence()
 			return
 		if ray_cast_left.is_colliding() and moving_left:
-			print("Acorn hit wall on left side") 
+
 			start_disappear_sequence()
 			return
 		
@@ -88,7 +88,7 @@ func _on_body_entered(body: Node2D):
 	# Check if it hit a player (has HealthScript component)
 	var health_component = body.get_node("HealthScript") if body.has_node("HealthScript") else null
 	if health_component and health_component is Health:
-		print("Acorn hit player: ", body.name)
+
 		start_disappear_sequence()
 		return
 

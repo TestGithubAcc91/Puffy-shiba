@@ -60,7 +60,7 @@ func _process(delta: float):
 			if damage_area:
 				damage_area.unparryable = false
 			
-			print("Returning to idle - attacks now parryable again")
+
 	
 	# Handle movement if enabled
 	if circular_movement_enabled:
@@ -168,7 +168,7 @@ func _on_detection_area_body_entered(body: Node2D):
 		if damage_area:
 			damage_area.unparryable = true
 		
-		print("Player detected! Playing Spiked animation - attacks now unparryable")
+
 
 func _on_detection_area_body_exited(body: Node2D):
 	# Optional: Handle when player leaves detection area

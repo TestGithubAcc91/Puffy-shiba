@@ -693,3 +693,10 @@ func _on_player_died():
 	
 	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()
+	
+	
+func grab_vine(vine: Vine):
+	print("Player grab_vine method called")
+	if vine.player_in_grab_area and has_node("VineComponent"):
+		print("Player attempting to grab vine through VineComponent")
+		$VineComponent.grab_vine(vine)

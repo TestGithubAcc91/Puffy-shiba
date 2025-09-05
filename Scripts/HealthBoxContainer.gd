@@ -44,70 +44,68 @@ func setup_health_segments():
 			hp_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			hp_node.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	
-	print("Setup ", hp_nodes.size(), " HP segments")
+
 
 func connect_to_health_system():
-	print("=== Attempting to connect to health system ===")
+
 	
 	# Try multiple methods to find the player
 	var player = null
 	
 	# Method 1: Try finding by group
 	player = get_tree().get_first_node_in_group("player")
-	print("Method 1 - Player by group: ", player)
+
 	
 	# Method 2: Try finding by name
 	if not player:
 		player = get_tree().get_first_node_in_group("Player")  # Try with capital P
-		print("Method 2 - Player by group (capital): ", player)
+
 	
 	# Method 3: Try finding by node name "Player" anywhere in the scene tree
 	if not player:
 		player = get_tree().current_scene.find_child("Player", true, false)
-		print("Method 3 - Player by name search: ", player)
+
 	
 	# Method 4: Try relative path to Game, then find Player child
 	if not player:
 		var game_node = get_node("../../")  # This should be your Game node
-		print("Method 4 - Game node: ", game_node)
+
 		if game_node and game_node.has_node("Player"):
 			player = game_node.get_node("Player")
-			print("Method 4 - Player from Game: ", player)
+
 	
 	# Method 5: Search through all nodes for one with HealthScript
 	if not player:
-		print("Method 5 - Searching all nodes for HealthScript:")
+
 		var all_nodes = get_tree().current_scene.find_children("*", "", true, false)
 		for node in all_nodes:
-			print("  Checking: ", node.name, " (", node.get_script(), ")")
+
 			if node.has_node("HealthScript"):
 				player = node
-				print("    ^ Found player with HealthScript: ", player)
+
 				break
 	
-	print("Final player found: ", player)
+
 	
 	if player:
-		print("Player children:")
+
 		for child in player.get_children():
 			print("  - ", child.name, " (", child.get_script(), ")")
 		
 		if player.has_node("HealthScript"):
 			var health_script = player.get_node("HealthScript")
-			print("HealthScript found: ", health_script)
-			print("HealthScript class: ", health_script.get_script())
-			print("Available signals: ", health_script.get_signal_list())
+
 			
 			if health_script.has_signal("health_changed"):
 				# Check if already connected
 				if not health_script.health_changed.is_connected(_on_health_changed):
 					health_script.health_changed.connect(_on_health_changed)
-					print("✓ Successfully connected to health_changed signal")
+
 					
 					# Initialize display with current health
 					if health_script.has_method("get") or "current_health" in health_script:
 						var current_hp = health_script.current_health
-						print("Initial health: ", current_hp)
+
 						update_health_display(current_hp)
 				else:
 					print("✓ Already connected to health_changed signal")
@@ -118,19 +116,15 @@ func connect_to_health_system():
 	else:
 		print("✗ Could not find player node")
 	
-	print("=== Connection attempt complete ===")
+
 
 func _on_health_changed(new_health: int):
-	print("=== Health changed signal received ===")
-	print("New health: ", new_health)
-	print("Health per segment: ", health_per_segment)
+
 	update_health_display(new_health)
-	print("=== Health display updated ===")
+
 
 func update_health_display(current_health: int):
-	print("=== Updating health display ===")
-	print("Current health: ", current_health)
-	print("HP nodes count: ", hp_nodes.size())
+
 	
 	if hp_nodes.is_empty():
 		print("✗ No HP nodes assigned!")
@@ -140,21 +134,21 @@ func update_health_display(current_health: int):
 	var segments_needed = ceili(float(current_health) / float(health_per_segment))
 	segments_needed = max(0, min(segments_needed, hp_nodes.size()))
 	
-	print("Segments needed: ", segments_needed, " | Current active: ", current_active_segments)
+
 	
 	# Determine which texture to use based on segments remaining
 	var texture_to_use = get_texture_for_segments(segments_needed)
-	print("Texture for ", segments_needed, " segments: ", texture_to_use)
+
 	
 	# Update segment visibility and textures
 	for i in range(hp_nodes.size()):
 		var segment = hp_nodes[i]
 		if not segment:
-			print("✗ HP node at index ", i, " is null!")
+
 			continue
 			
 		var should_be_active = i < segments_needed
-		print("Segment ", i, " should be active: ", should_be_active, " | current alpha: ", segment.modulate.a)
+		
 		
 		# Update texture for ALL segments, not just active ones
 		# This ensures invisible hearts also get the right texture for when they become visible again
@@ -165,7 +159,7 @@ func update_health_display(current_health: int):
 		var is_currently_visible = segment.modulate.a > 0.5  # Consider visible if alpha > 0.5
 		
 		if should_be_visible != is_currently_visible:
-			print("Changing segment ", i, " visibility to: ", should_be_visible)
+
 			
 			if should_be_visible:
 				# Show the heart
@@ -177,7 +171,7 @@ func update_health_display(current_health: int):
 			print("No change needed for segment ", i)
 	
 	current_active_segments = segments_needed
-	print("=== Health display update complete ===")
+
 
 var last_special_texture: Texture2D = null  # Track the last special texture used
 

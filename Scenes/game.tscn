@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=29 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -17,6 +17,7 @@
 [ext_resource type="Texture2D" uid="uid://de2orudnm0dbm" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP1.png" id="12_1phco"]
 [ext_resource type="Texture2D" uid="uid://bhhpohq32ugvh" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHPFade.png" id="13_1phco"]
 [ext_resource type="PackedScene" uid="uid://c5dckssmfxqgb" path="res://Scenes/acopter.tscn" id="16_nnt18"]
+[ext_resource type="PackedScene" uid="uid://do0b3q7js88n6" path="res://Scenes/vine.tscn" id="18_85qyi"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -573,7 +574,12 @@ vertical_speed = 50.0
 
 [node name="Beamer" parent="LevelHolder/EnemyHolder" instance=ExtResource("10_ewbju")]
 position = Vector2(245, -7)
-direction = 2
+
+[node name="Vine" parent="LevelHolder" instance=ExtResource("18_85qyi")]
+position = Vector2(106, -106)
+scale = Vector2(2, 2)
+vine_length = 25.0
+grab_range = 25.0
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

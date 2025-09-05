@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=32 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="PackedScene" uid="uid://cw3hs2qsg2k4t" path="res://Scenes/air_puff_H.tscn" id="2_pu2lt"]
@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" uid="uid://b6f36ebip5og4" path="res://Assets/sprites/PlayerGUI/parryCharges/parryChargeEmpty.png" id="8_f1ek2"]
 [ext_resource type="Texture2D" uid="uid://cc46slmlinkrh" path="res://Assets/sprites/PlayerSprites/glint_anim.png" id="9_f1ek2"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="10_tx1dd"]
+[ext_resource type="Script" uid="uid://ciukewv7haujl" path="res://Scripts/vine_component.gd" id="13_ukyrk"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_igrcy"]
 atlas = ExtResource("7_gymyn")
@@ -223,3 +224,6 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("10_tx1dd")
 theme_override_font_sizes/font_size = 7
 text = "Late!"
+
+[node name="VineComponent" type="Node" parent="."]
+script = ExtResource("13_ukyrk")
