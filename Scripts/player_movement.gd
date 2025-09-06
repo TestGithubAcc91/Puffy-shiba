@@ -8,6 +8,7 @@ const HIGH_JUMP_VELOCITY = -350.0
 @onready var glint_sprite: AnimatedSprite2D = $GlintSprite
 @onready var health_script = $HealthScript
 @onready var parry_label: Label = $Late_EarlyLabel
+@onready var vine_component = $VineComponent  # Reference to VineComponent
 
 # Air puff effect for dash
 @export var air_puff_scene: PackedScene
@@ -148,7 +149,8 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("Parry") and can_parry:
 		activate_parry()
 	
-	var direction := Input.get_axis("Move_Left", "Move_Right")
+	# MODIFIED: Get direction input but respect vine component input blocking
+	var direction := get_effective_horizontal_input()
 	
 	if direction > 0:
 		animated_sprite.flip_h = false
@@ -175,6 +177,15 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 	
 	move_and_slide()
+
+# NEW FUNCTION: Get horizontal input but respect vine component blocking
+func get_effective_horizontal_input() -> float:
+	# If we're swinging and inputs are blocked by the vine component, return 0
+	if vine_component and vine_component.is_swinging and vine_component.inputs_blocked:
+		return 0.0
+	
+	# Otherwise, return normal input
+	return Input.get_axis("Move_Left", "Move_Right")
 
 func spawn_air_puff():
 	if air_puff_scene:

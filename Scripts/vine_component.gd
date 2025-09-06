@@ -1,4 +1,4 @@
-# VineComponent.gd - Fixed version that doesn't teleport player + 5 pixel offset
+# VineComponent.gd - Version with improved input blocking system
 extends Node
 
 @export var swing_speed: float = 400.0
@@ -7,37 +7,45 @@ extends Node
 @export var gravity_multiplier_while_swinging: float = 0.3
 @export var max_swing_angle_degrees: float = 70.0
 @export var slowdown_start_angle_degrees: float = 50.0
-@export var return_force_strength: float = 200.0  # Base strength of the return force
-@export var return_force_buildup_rate: float = 1.5  # How quickly the return force increases
-@export var pendulum_restore_force: float = 150.0  # Natural pendulum restoration force
-@export var swing_damping: float = 0.98  # Damping factor to gradually reduce swing (0.98 = 2% reduction per frame)
+@export var input_unlock_angle_degrees: float = 20.0  # Angle on opposite side where inputs become available again
+@export var return_force_strength: float = 200.0
+@export var return_force_buildup_rate: float = 1.5
+@export var pendulum_restore_force: float = 150.0
+@export var swing_damping: float = 0.98
+@export var slowdown_curve_exponent: float = 2.0
+@export var max_slowdown_factor: float = 0.7
 
 var current_vine: Vine = null
 var is_swinging: bool = false
 var player: CharacterBody2D
 var swing_angle: float = 0.0
 var swing_angular_velocity: float = 0.0
-var nearby_vine: Vine = null  # Track nearby vine for input checking
+var nearby_vine: Vine = null
 var current_grab_distance: float = 0.0
 var max_swing_angle_radians: float
 var slowdown_start_angle_radians: float
-var time_at_limit: float = 0.0  # Track how long player has been at the swing limit
-var recently_released_vine: Vine = null  # Track vine that was just released
-var is_grounded: bool = false  # Track if player is on ground
+var input_unlock_angle_radians: float
+var time_at_limit: float = 0.0
+var recently_released_vine: Vine = null
+var is_grounded: bool = false
+
+# New variables for input blocking system
+var inputs_blocked: bool = false
+var blocked_direction: int = 0  # -1 for left, 1 for right, 0 for none
+var last_swing_direction: int = 0  # Track which direction we were swinging when blocked
 
 func _ready():
 	player = get_parent() as CharacterBody2D
 	max_swing_angle_radians = deg_to_rad(max_swing_angle_degrees)
 	slowdown_start_angle_radians = deg_to_rad(slowdown_start_angle_degrees)
+	input_unlock_angle_radians = deg_to_rad(input_unlock_angle_degrees)
 
 func _physics_process(delta):
 	# Check if player is grounded
 	if player and player.is_on_floor():
 		if not is_grounded:
 			is_grounded = true
-			# Clear recently released vine when touching ground
 			if recently_released_vine:
-				print("Player touched ground - can reattach to vine")
 				recently_released_vine = null
 	else:
 		is_grounded = false
@@ -48,7 +56,6 @@ func _physics_process(delta):
 	
 	# Auto-grab vine immediately when in detection area (no jump needed)
 	if nearby_vine and not is_swinging:
-		# Check if player is actually in the vine's detection area
 		var distance_to_vine_bottom = player.global_position.distance_to(
 			nearby_vine.global_position + Vector2(0, nearby_vine.vine_length)
 		)
@@ -56,18 +63,14 @@ func _physics_process(delta):
 		if distance_to_vine_bottom <= nearby_vine.grab_range:
 			if recently_released_vine == null or nearby_vine != recently_released_vine:
 				grab_vine(nearby_vine)
-			else:
-				print("Cannot reattach to recently released vine until touching ground")
 	
 	if is_swinging and current_vine:
 		handle_vine_swinging(delta)
 
-# New helper function to check if player is in vine detection area
 func player_in_vine_detection_area() -> bool:
 	if not nearby_vine:
 		return false
 	
-	# Check if player is within the vine's detection area
 	var player_pos = player.global_position
 	var vine_bottom = nearby_vine.global_position + Vector2(0, nearby_vine.vine_length)
 	var distance = player_pos.distance_to(vine_bottom)
@@ -76,62 +79,55 @@ func player_in_vine_detection_area() -> bool:
 
 func set_nearby_vine(vine: Vine):
 	nearby_vine = vine
-	print("Nearby vine set: ", vine)
 
 func clear_nearby_vine(vine: Vine):
 	if nearby_vine == vine:
 		nearby_vine = null
-		print("Nearby vine cleared")
 
 func grab_vine(vine: Vine):
-	print("VineComponent: Auto-grabbing vine")
 	current_vine = vine
 	is_swinging = true
 	vine.attach_player(player)
 	
-	# FIXED: Always use the vine's fixed length, not the player's current distance
-	# Add 5 pixel offset so player appears to hang from the bottom of the last vine sprite
+	# Reset input blocking when grabbing a new vine
+	inputs_blocked = false
+	blocked_direction = 0
+	last_swing_direction = 0
+	
 	current_grab_distance = vine.vine_length + 5.0
 	
-	# Calculate direction from vine anchor to player
 	var to_player = player.global_position - vine.vine_anchor
 	var direction = to_player.normalized()
 	
-	# Position player at the correct distance from anchor (vine length + 5 pixel offset)
 	player.global_position = vine.vine_anchor + direction * current_grab_distance
 	
-	# Calculate the swing angle based on the player's position relative to vine anchor
 	to_player = player.global_position - vine.vine_anchor
-	swing_angle = atan2(to_player.x, to_player.y)  # Angle from vertical down
+	swing_angle = atan2(to_player.x, to_player.y)
 	
-	# Constrain initial angle if it's outside the allowed range
 	if swing_angle > max_swing_angle_radians:
 		swing_angle = max_swing_angle_radians
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
 	swing_angular_velocity = 0.0
-	time_at_limit = 0.0  # Reset timer when grabbing vine
-	
-	print("Player grabs vine 5px below blue circle center. Distance from anchor: ", current_grab_distance, ", angle: ", rad_to_deg(swing_angle))
+	time_at_limit = 0.0
 	
 func release_vine():
 	if current_vine:
-		print("Player released vine with Jump button")
-		
-		# Store the vine that was just released
 		recently_released_vine = current_vine
-		
-		# Simply drop the player without applying any release velocity
 		current_vine.release_player()
 		current_vine = null
 		is_swinging = false
 		swing_angle = 0.0
 		swing_angular_velocity = 0.0
 		current_grab_distance = 0.0
-		time_at_limit = 0.0  # Reset the timer when releasing
+		time_at_limit = 0.0
 		
-		# Reset player velocity to zero for a clean drop
+		# Reset input blocking when releasing vine
+		inputs_blocked = false
+		blocked_direction = 0
+		last_swing_direction = 0
+		
 		player.velocity = Vector2.ZERO
 
 func handle_vine_swinging(delta):
@@ -141,72 +137,65 @@ func handle_vine_swinging(delta):
 	var vine_anchor = current_vine.vine_anchor
 	var effective_vine_length = current_grab_distance
 	
-	# Physics-based pendulum motion
-	# For a pendulum, the restoring force is always toward center (angle = 0)
-	# The force should be: F = -mg*sin(angle) / length
-	# Since we want the vine to return to center, we need the force to oppose the angle
-	
 	var gravity_magnitude = player.get_gravity().y
-	
-	# Standard pendulum physics: acceleration = -(g/L) * sin(angle)
-	# This naturally creates the restoring force toward vertical
 	var pendulum_acceleration = -(gravity_magnitude * gravity_multiplier_while_swinging / effective_vine_length) * sin(swing_angle)
-	
-	# Add additional restoration force for faster return to center
 	var additional_restoration = -(pendulum_restore_force / effective_vine_length) * sin(swing_angle)
 	
-	# Apply both forces
 	swing_angular_velocity += (pendulum_acceleration + additional_restoration) * delta
 	
-	# Check if player is at or near the swing limits
 	var abs_angle = abs(swing_angle)
-	var at_limit = abs_angle >= (max_swing_angle_radians * 0.95)  # Consider 95% of max as "at limit"
+	var at_limit = abs_angle >= (max_swing_angle_radians * 0.95)
 	
 	if at_limit:
-		# Increase time at limit
 		time_at_limit += delta
-		
-		# Apply additional return force that gets stronger over time
 		var return_force_multiplier = time_at_limit * return_force_buildup_rate
 		var return_force = -sign(swing_angle) * return_force_strength * return_force_multiplier / effective_vine_length
 		swing_angular_velocity += return_force * delta
 	else:
-		# Reset timer when not at limit
 		time_at_limit = 0.0
 	
-	# Get player input
-	var horizontal_input = Input.get_axis("Move_Left", "Move_Right")
+	# NEW: Check if we should block inputs based on swing angle
+	check_input_blocking()
+	
+	# Get player input, but respect blocking
+	var raw_input = Input.get_axis("Move_Left", "Move_Right")
+	var horizontal_input = 0.0
+	
+	if not inputs_blocked:
+		horizontal_input = raw_input
+		# Track the last swing direction for blocking logic
+		if horizontal_input != 0:
+			last_swing_direction = sign(horizontal_input)
+	else:
+		# If inputs are blocked, only allow input in the opposite direction of the block
+		if (blocked_direction == 1 and raw_input < 0) or (blocked_direction == -1 and raw_input > 0):
+			horizontal_input = raw_input
 	
 	# Add player input to swing
 	if horizontal_input != 0:
 		var input_force = horizontal_input * swing_speed / effective_vine_length
-		
-		# Check if player is trying to move against the current swing direction
 		var moving_against_swing = (horizontal_input * swing_angular_velocity) < 0
 		
 		if moving_against_swing:
-			# Make it easier to change direction by boosting the input force
-			input_force *= 2.0  # Double the force when moving against swing direction
+			input_force *= 2.0
 		
 		swing_angular_velocity += input_force * delta
 	else:
-		# When no input is applied, add damping to gradually slow the swing
-		# This prevents infinite swinging and helps the vine settle at center
 		swing_angular_velocity *= swing_damping
 	
-	# Apply progressive slowdown as we approach the limits (only when moving towards the limit)
+	# Apply progressive slowdown as we approach the limits
 	if abs_angle > slowdown_start_angle_radians:
-		# Check if we're moving towards the limit (same sign means moving towards limit)
 		var moving_towards_limit = (swing_angle * swing_angular_velocity) > 0
 		
 		if moving_towards_limit:
-			# Calculate how close we are to the max (0.0 = at slowdown start, 1.0 = at max)
 			var slowdown_range = max_swing_angle_radians - slowdown_start_angle_radians
 			var progress_in_slowdown = (abs_angle - slowdown_start_angle_radians) / slowdown_range
 			progress_in_slowdown = clamp(progress_in_slowdown, 0.0, 1.0)
 			
-			# Much gentler slowdown curve (reduced from progress^2 to progress^0.5)
-			var slowdown_factor = 1.0 - (sqrt(progress_in_slowdown) * 0.3)  # Max 30% reduction instead of 60%
+			var curve_progress = pow(progress_in_slowdown, slowdown_curve_exponent)
+			var slowdown_factor = 1.0 - (curve_progress * max_slowdown_factor)
+			slowdown_factor = max(slowdown_factor, 1.0 - max_slowdown_factor)
+			
 			swing_angular_velocity *= slowdown_factor
 	
 	# Clamp angular velocity
@@ -216,19 +205,17 @@ func handle_vine_swinging(delta):
 	# Update angle
 	var new_angle = swing_angle + swing_angular_velocity * delta
 	
-	# Constrain the angle to ±70 degrees and handle collision/bounce
+	# Constrain the angle to ±70 degrees
 	if new_angle > max_swing_angle_radians:
 		new_angle = max_swing_angle_radians
-		# Much gentler bounce since we've already been slowing down
-		swing_angular_velocity = -swing_angular_velocity * 0.3  # Reduced from 0.7 to 0.3
+		swing_angular_velocity = -swing_angular_velocity * 0.3
 	elif new_angle < -max_swing_angle_radians:
 		new_angle = -max_swing_angle_radians
-		# Much gentler bounce since we've already been slowing down
 		swing_angular_velocity = -swing_angular_velocity * 0.3
 	
 	swing_angle = new_angle
 	
-	# Calculate new position using the current grab distance (not vine_length!)
+	# Calculate new position
 	var new_position = vine_anchor + Vector2(sin(swing_angle), cos(swing_angle)) * effective_vine_length
 	player.global_position = new_position
 	
@@ -237,5 +224,31 @@ func handle_vine_swinging(delta):
 	player.velocity = tangent_direction * swing_angular_velocity * effective_vine_length
 	
 	# Check for release input (Jump button)
-	if Input.is_action_just_pressed("ui_accept"):
+	if Input.is_action_just_pressed("Jump"):
 		release_vine()
+
+# NEW FUNCTION: Check if inputs should be blocked or unblocked
+func check_input_blocking():
+	var abs_angle = abs(swing_angle)
+	
+	# Check if we should block inputs (reached slowdown angle)
+	if abs_angle >= slowdown_start_angle_radians and not inputs_blocked:
+		inputs_blocked = true
+		# Determine which direction is blocked based on swing angle
+		blocked_direction = sign(swing_angle)
+		print("Inputs blocked for direction: ", blocked_direction)
+	
+	# Check if we should unblock inputs (reached unlock angle on opposite side)
+	if inputs_blocked:
+		if blocked_direction == 1:  # Right was blocked
+			# Unblock if we've swung to the left unlock angle
+			if swing_angle <= -input_unlock_angle_radians:
+				inputs_blocked = false
+				blocked_direction = 0
+				print("Inputs unblocked - reached left unlock angle")
+		elif blocked_direction == -1:  # Left was blocked
+			# Unblock if we've swung to the right unlock angle
+			if swing_angle >= input_unlock_angle_radians:
+				inputs_blocked = false
+				blocked_direction = 0
+				print("Inputs unblocked - reached right unlock angle")

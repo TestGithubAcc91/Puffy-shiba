@@ -581,7 +581,9 @@ position = Vector2(106, -73)
 vine_length = 45.0
 swing_force = 20.0
 grab_range = 5.0
+debug_enabled = false
 vine_segment_spacing = 2.0
+randomize_segment_frame_offset = false
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

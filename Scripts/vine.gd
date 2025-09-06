@@ -555,14 +555,10 @@ func _on_body_exited(body):
 func attach_player(p: CharacterBody2D):
 	player = p
 	is_player_grabbing = true
-	print("Player attached to vine. Will swing on green path at distance: ", vine_length)
-	queue_redraw()
 
 func release_player():
-	print("Player released from vine")
 	player = null
 	is_player_grabbing = false
-	queue_redraw()
 
 func get_swing_direction_to_player() -> Vector2:
 	if not player:
