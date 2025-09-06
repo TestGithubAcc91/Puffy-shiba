@@ -1,5 +1,5 @@
-# Vine.gd - Version with sprite-based vine visuals
-extends Sprite2D
+# Vine.gd - Version with AnimatedSprite2D-based vine visuals
+extends AnimatedSprite2D
 class_name Vine
 
 @export var vine_length: float = 200.0: set = set_vine_length
@@ -9,9 +9,12 @@ class_name Vine
 
 # Vine visual properties
 @export_group("Vine Visuals")
-@export var vine_segment_texture: Texture2D  # 16x16 texture for vine segments
+@export var vine_segment_animation: String = "default"  # Animation name for vine segments
 @export var vine_segments_per_16_pixels: int = 1  # How many segments per 16 pixels of length
 @export var vine_segment_spacing: float = 16.0  # Distance between segment centers
+@export var vine_holder_animation: String = "default"  # Animation for the vine holder (this node)
+@export var segment_animation_speed: float = 1.0  # Speed multiplier for segment animations
+@export var randomize_segment_frame_offset: bool = true  # Randomize starting frame for variety
 
 # Detection area that moves with the vine bottom
 var detection_area: Area2D
@@ -23,13 +26,16 @@ var vine_anchor: Vector2
 var current_vine_bottom: Vector2  # Current position of the vine bottom (blue circle)
 var player_in_grab_area: bool = false
 
-# Vine segment sprites
-var vine_segment_sprites: Array[Sprite2D] = []
+# Vine segment animated sprites
+var vine_segment_sprites: Array[AnimatedSprite2D] = []
 
 func _ready():
 	vine_anchor = global_position
 	# Initially, vine hangs straight down
 	current_vine_bottom = vine_anchor + Vector2(0, vine_length)
+	
+	# Set up the vine holder animation (this node)
+	setup_vine_holder_animation()
 	
 	create_detection_area()
 	create_grab_indicator()
@@ -38,6 +44,52 @@ func _ready():
 	
 	# Create vine segment sprites
 	create_vine_segments()
+
+func setup_vine_holder_animation():
+	# If no sprite_frames is assigned to the vine holder, create a default one
+	if not sprite_frames:
+		print("No SpriteFrames assigned to vine holder - creating default")
+		sprite_frames = create_default_vine_holder_sprite_frames()
+	
+	# Start the animation
+	if sprite_frames.has_animation(vine_holder_animation):
+		play(vine_holder_animation)
+	else:
+		print("Animation '", vine_holder_animation, "' not found in vine holder SpriteFrames")
+
+func create_default_vine_holder_sprite_frames() -> SpriteFrames:
+	# Create a default SpriteFrames resource for the vine holder (anchor point)
+	var frames = SpriteFrames.new()
+	frames.add_animation("default")
+	
+	# Create a few frames for the vine anchor/holder animation
+	for i in range(3):
+		var image = Image.create(24, 24, false, Image.FORMAT_RGBA8)
+		image.fill(Color.TRANSPARENT)
+		
+		# Draw a tree branch or vine anchor
+		var branch_color = Color(0.4, 0.2, 0.1)  # Brown
+		var leaf_color = Color(0.2, 0.6, 0.1)   # Green
+		
+		# Draw branch
+		for y in range(10, 14):
+			for x in range(8, 16):
+				image.set_pixel(x, y, branch_color)
+		
+		# Add leaves that change per frame for animation
+		var leaf_offset = i * 2
+		image.set_pixel(6 + leaf_offset, 8, leaf_color)
+		image.set_pixel(7 + leaf_offset, 9, leaf_color)
+		image.set_pixel(18 - leaf_offset, 8, leaf_color)
+		image.set_pixel(17 - leaf_offset, 9, leaf_color)
+		
+		var texture = ImageTexture.create_from_image(image)
+		frames.add_frame("default", texture)
+	
+	frames.set_animation_speed("default", 2.0)  # 2 FPS for gentle swaying
+	frames.set_animation_loop("default", true)
+	
+	return frames
 
 func set_vine_length(new_length: float):
 	vine_length = new_length
@@ -72,66 +124,103 @@ func create_vine_segments():
 		segment.queue_free()
 	vine_segment_sprites.clear()
 	
-	if not vine_segment_texture:
-		print("No vine segment texture assigned - creating default")
-		# Create a default 16x16 vine segment texture if none is provided
-		vine_segment_texture = create_default_vine_texture()
+	# Use this node's SpriteFrames for the segments
+	var segment_frames = sprite_frames
+	if not segment_frames:
+		print("No vine segment SpriteFrames assigned - creating default")
+		segment_frames = create_default_vine_segment_sprite_frames()
 	
 	# Calculate how many segments we need
 	var num_segments = max(1, int(vine_length / vine_segment_spacing))
 	
-	print("Creating ", num_segments, " vine segments for length ", vine_length)
+	print("Creating ", num_segments, " animated vine segments for length ", vine_length)
 	
-	# Create segment sprites
+	# Create animated segment sprites
 	for i in range(num_segments):
-		var segment = Sprite2D.new()
-		segment.texture = vine_segment_texture
+		var segment = AnimatedSprite2D.new()
+		segment.sprite_frames = segment_frames
 		
 		# Position segment along the vine path
 		var segment_progress = float(i) / float(num_segments - 1) if num_segments > 1 else 0.0
 		var segment_y = segment_progress * vine_length
 		segment.position = Vector2(0, segment_y)
 		
+		# Start animation
+		if segment_frames.has_animation(vine_segment_animation):
+			segment.play(vine_segment_animation)
+			segment.speed_scale = segment_animation_speed
+			
+			# Randomize starting frame for visual variety
+			if randomize_segment_frame_offset:
+				segment.frame = randi() % segment_frames.get_frame_count(vine_segment_animation)
+		else:
+			print("Animation '", vine_segment_animation, "' not found in segment SpriteFrames")
+		
 		# Add some variety to segments (optional)
-		if i % 3 == 1:
-			segment.modulate = Color(0.9, 0.8, 0.6)  # Slightly different color
-		elif i % 3 == 2:
-			segment.rotation = deg_to_rad(5)  # Slight rotation
+		if i % 4 == 1:
+			segment.modulate = Color(0.95, 0.9, 0.8)  # Slightly different tint
+		elif i % 4 == 2:
+			segment.flip_h = true  # Horizontal flip for variety
+		elif i % 4 == 3:
+			segment.speed_scale = segment_animation_speed * 0.8  # Slightly slower animation
 		
 		add_child(segment)
 		vine_segment_sprites.append(segment)
 
-func create_default_vine_texture() -> Texture2D:
-	# Create a 16x16 default vine segment texture
-	var image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+func create_default_vine_segment_sprite_frames() -> SpriteFrames:
+	# Create a default SpriteFrames resource for vine segments
+	var frames = SpriteFrames.new()
+	frames.add_animation("default")
 	
-	# Fill with transparent background
-	image.fill(Color.TRANSPARENT)
+	# Create multiple frames for vine segment animation (swaying, growing, etc.)
+	for frame_idx in range(4):
+		var image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		image.fill(Color.TRANSPARENT)
+		
+		# Draw vine segment with slight variations per frame
+		var vine_color = Color(0.4, 0.2, 0.1)  # Brown
+		var leaf_color = Color(0.2, 0.6, 0.1)  # Green
+		
+		# Central stem (4 pixels wide as requested)
+		var stem_offset = sin(frame_idx * 0.5) * 0.5  # Slight sway animation
+		for y in range(16):
+			for x in range(6, 10):  # 4 pixels wide, centered
+				var actual_x = x + int(stem_offset)
+				if actual_x >= 0 and actual_x < 16:
+					var color = vine_color
+					# Add some texture variation
+					if x == 6 or x == 9:
+						color = color.darkened(0.2)  # Darker edges
+					if (y + frame_idx) % 6 == 0:
+						color = color.lightened(0.1)  # Moving texture rings
+					image.set_pixel(actual_x, y, color)
+		
+		# Add animated leaves/details
+		var leaf_frame_offset = frame_idx
+		
+		# Left leaf (animated)
+		if frame_idx % 2 == 0:
+			image.set_pixel(4, 4 + leaf_frame_offset, leaf_color)
+			image.set_pixel(5, 5 + leaf_frame_offset, leaf_color)
+		
+		# Right leaf (animated)
+		if (frame_idx + 1) % 3 == 0:
+			image.set_pixel(11, 8 + (leaf_frame_offset % 2), leaf_color)
+			image.set_pixel(10, 9 + (leaf_frame_offset % 2), leaf_color)
+		
+		# Add small animated details
+		if frame_idx == 2:
+			# Small berries or buds
+			image.set_pixel(3, 12, Color(0.8, 0.2, 0.2))  # Red berry
+			image.set_pixel(12, 6, Color(0.8, 0.2, 0.2))  # Red berry
+		
+		var texture = ImageTexture.create_from_image(image)
+		frames.add_frame("default", texture)
 	
-	# Draw a simple vine pattern
-	# Central stem (4 pixels wide as requested)
-	for y in range(16):
-		for x in range(6, 10):  # 4 pixels wide, centered
-			var color = Color(0.4, 0.2, 0.1)  # Brown color
-			# Add some texture variation
-			if x == 6 or x == 9:
-				color = color.darkened(0.2)  # Darker edges
-			if y % 4 == 0:
-				color = color.lightened(0.1)  # Lighter rings
-			image.set_pixel(x, y, color)
+	frames.set_animation_speed("default", 3.0)  # 3 FPS for gentle animation
+	frames.set_animation_loop("default", true)
 	
-	# Add small leaves/texture details
-	# Left leaf
-	if randf() > 0.7:  # 30% chance for variety
-		image.set_pixel(4, 4, Color(0.2, 0.6, 0.1))
-		image.set_pixel(5, 5, Color(0.2, 0.6, 0.1))
-	
-	# Right leaf
-	if randf() > 0.7:  # 30% chance for variety
-		image.set_pixel(11, 8, Color(0.2, 0.6, 0.1))
-		image.set_pixel(10, 9, Color(0.2, 0.6, 0.1))
-	
-	return ImageTexture.create_from_image(image)
+	return frames
 
 func update_vine_segments_for_swinging():
 	if not is_player_grabbing or not player:
@@ -142,12 +231,19 @@ func update_vine_segments_for_swinging():
 			var segment_y = segment_progress * vine_length
 			segment.position = Vector2(0, segment_y)
 			segment.rotation = 0  # No rotation when hanging straight
+			
+			# Normal animation speed when not swinging
+			segment.speed_scale = segment_animation_speed
 		return
 	
 	# When swinging, curve the vine segments toward the player
 	var to_player = player.global_position - vine_anchor
 	var vine_direction = to_player.normalized()
 	var actual_distance = to_player.length()
+	
+	# Calculate swing intensity for animation effects
+	var swing_speed = player.velocity.length()
+	var swing_intensity = clamp(swing_speed / 300.0, 0.0, 2.0)  # 0-2x multiplier based on swing speed
 	
 	for i in range(vine_segment_sprites.size()):
 		var segment = vine_segment_sprites[i]
@@ -170,6 +266,9 @@ func update_vine_segments_for_swinging():
 			
 			var segment_direction = (next_pos - segment.position).normalized()
 			segment.rotation = atan2(segment_direction.x, -segment_direction.y)
+		
+		# Speed up animation based on swing intensity
+		segment.speed_scale = segment_animation_speed * (1.0 + swing_intensity)
 
 func create_detection_area():
 	# Create detection area as a circle that will move with the vine bottom
@@ -267,7 +366,7 @@ func update_debug_info():
 	debug_label.text = debug_text
 
 func _draw():
-	# Draw debug information (the sprites handle the visual vine now)
+	# Draw debug information (the animated sprites handle the visual vine now)
 	if debug_enabled:
 		# Draw vine anchor point (red circle)
 		draw_circle(Vector2.ZERO, 8, Color.RED)
@@ -297,13 +396,20 @@ func _on_body_entered(body):
 		
 		# Notify the player's VineComponent about nearby vine
 		if body.has_node("VineComponent"):
-			body.get_node("VineComponent").set_nearby_vine(self)
+			var vine_component = body.get_node("VineComponent")
+			vine_component.nearby_vine = self
 		
 		# Show grab indicator when player is in range
 		if grab_indicator:
 			grab_indicator.visible = true
 		
 		print("Player is now in grab area (blue circle)")
+		
+		# Immediately try to grab the vine if not already swinging
+		if body.has_node("VineComponent"):
+			var vine_component = body.get_node("VineComponent")
+			if not vine_component.is_swinging:
+				vine_component.grab_vine(self)
 
 func _on_body_exited(body):
 	print("Body exited vine grab area: ", body.name)
@@ -312,7 +418,7 @@ func _on_body_exited(body):
 		if player == body:
 			# Notify the player's VineComponent that vine is no longer nearby
 			if body.has_node("VineComponent"):
-				body.get_node("VineComponent").clear_nearby_vine(self)
+				body.get_node("VineComponent").nearby_vine = null
 			player = null
 		player_in_grab_area = false
 		

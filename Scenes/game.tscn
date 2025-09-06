@@ -577,10 +577,11 @@ vertical_speed = 50.0
 position = Vector2(245, -7)
 
 [node name="Vine" parent="LevelHolder" instance=ExtResource("18_85qyi")]
-position = Vector2(106, -106)
-scale = Vector2(2, 2)
-vine_length = 40.0
+position = Vector2(106, -73)
+vine_length = 45.0
 swing_force = 15.0
+grab_range = 5.0
+vine_segment_spacing = 4.0
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

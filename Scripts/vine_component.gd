@@ -46,17 +46,33 @@ func _physics_process(delta):
 	if Input.is_action_just_pressed("ui_accept") and is_swinging:
 		release_vine()
 	
-	# Auto-grab vine when nearby (no input needed)
-	# But prevent reattaching to recently released vine until grounded
+	# Auto-grab vine immediately when in detection area (no jump needed)
 	if nearby_vine and not is_swinging:
-		if recently_released_vine == null or nearby_vine != recently_released_vine:
-			grab_vine(nearby_vine)
-		else:
-			print("Cannot reattach to recently released vine until touching ground")
+		# Check if player is actually in the vine's detection area
+		var distance_to_vine_bottom = player.global_position.distance_to(
+			nearby_vine.global_position + Vector2(0, nearby_vine.vine_length)
+		)
+		
+		if distance_to_vine_bottom <= nearby_vine.grab_range:
+			if recently_released_vine == null or nearby_vine != recently_released_vine:
+				grab_vine(nearby_vine)
+			else:
+				print("Cannot reattach to recently released vine until touching ground")
 	
 	if is_swinging and current_vine:
 		handle_vine_swinging(delta)
 
+# New helper function to check if player is in vine detection area
+func player_in_vine_detection_area() -> bool:
+	if not nearby_vine:
+		return false
+	
+	# Check if player is within the vine's detection area
+	var player_pos = player.global_position
+	var vine_bottom = nearby_vine.global_position + Vector2(0, nearby_vine.vine_length)
+	var distance = player_pos.distance_to(vine_bottom)
+	
+	return distance <= nearby_vine.grab_range
 func set_nearby_vine(vine: Vine):
 	nearby_vine = vine
 	print("Nearby vine set: ", vine)
@@ -72,11 +88,17 @@ func grab_vine(vine: Vine):
 	is_swinging = true
 	vine.attach_player(player)
 	
-	# FIXED: Use the player's CURRENT distance from vine anchor, don't teleport!
-	var to_player = player.global_position - vine.vine_anchor
-	current_grab_distance = to_player.length()
+	# FIXED: Always use the vine's fixed length, not the player's current distance
+	current_grab_distance = vine.vine_length
 	
-	# Calculate the current swing angle based on player's actual position
+	# Calculate direction from vine anchor to player
+	var to_player = player.global_position - vine.vine_anchor
+	var direction = to_player.normalized()
+	
+	# Position player at the correct distance from anchor (vine length)
+	player.global_position = vine.vine_anchor + direction * vine.vine_length
+	
+	# Calculate the swing angle based on the fixed vine length
 	swing_angle = atan2(to_player.x, to_player.y)  # Angle from vertical down
 	
 	# Constrain initial angle if it's outside the allowed range
@@ -85,13 +107,11 @@ func grab_vine(vine: Vine):
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
-	# DON'T teleport the player - let them stay where they are!
-	# The swing will work from their current position
-	
 	swing_angular_velocity = 0.0
 	time_at_limit = 0.0  # Reset timer when grabbing vine
 	
-	print("Player grabs vine at current position. Distance from anchor: ", current_grab_distance, ", angle: ", rad_to_deg(swing_angle))
+	print("Player grabs vine at fixed length. Distance from anchor: ", current_grab_distance, ", angle: ", rad_to_deg(swing_angle))
+	
 	
 func release_vine():
 	if current_vine:

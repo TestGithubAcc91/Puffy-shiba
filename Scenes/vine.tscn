@@ -1,12 +1,23 @@
-[gd_scene load_steps=4 format=3 uid="uid://do0b3q7js88n6"]
+[gd_scene load_steps=5 format=3 uid="uid://do0b3q7js88n6"]
 
-[ext_resource type="Texture2D" uid="uid://b3v6fvv7a0rdx" path="res://Assets/sprites/PlayerSprites/highJump_dashPuffy.png" id="1_krw3f"]
 [ext_resource type="Script" uid="uid://dlkalf5ltu2gm" path="res://Scripts/vine.gd" id="2_6slj2"]
-[ext_resource type="Texture2D" uid="uid://clddl7ykdovs7" path="res://Assets/sprites/InteractableSprites/vine.png" id="3_krw3f"]
+[ext_resource type="Texture2D" uid="uid://beqbqgsyafejv" path="res://Assets/sprites/InteractableSprites/vine_ring.png" id="3_krw3f"]
 
-[node name="Vine" type="Sprite2D"]
-texture = ExtResource("1_krw3f")
+[sub_resource type="AtlasTexture" id="AtlasTexture_6slj2"]
+atlas = ExtResource("3_krw3f")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_krw3f"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6slj2")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="Vine" type="AnimatedSprite2D"]
+sprite_frames = SubResource("SpriteFrames_krw3f")
 script = ExtResource("2_6slj2")
-vine_length = 100.0
-grab_range = 5.0
-vine_segment_texture = ExtResource("3_krw3f")
