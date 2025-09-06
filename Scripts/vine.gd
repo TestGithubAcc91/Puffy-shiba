@@ -1,4 +1,4 @@
-# Vine.gd - Version with AnimatedSprite2D-based vine visuals
+# Vine.gd - Version with AnimatedSprite2D-based vine visuals + End Sprite
 extends AnimatedSprite2D
 class_name Vine
 
@@ -16,6 +16,14 @@ class_name Vine
 @export var segment_animation_speed: float = 1.0  # Speed multiplier for segment animations
 @export var randomize_segment_frame_offset: bool = true  # Randomize starting frame for variety
 
+# End sprite properties
+@export_group("End Sprite")
+@export var end_sprite_texture: Texture2D  # Texture for the sprite at the end of the vine
+@export var end_sprite_scale: Vector2 = Vector2(1.0, 1.0)  # Scale of the end sprite
+@export var end_sprite_offset: Vector2 = Vector2.ZERO  # Offset from the vine end position
+@export var end_sprite_modulate: Color = Color.WHITE  # Color tint for the end sprite
+@export var end_sprite_rotation_degrees: float = 0.0  # Rotation of the end sprite in degrees
+
 # Detection area that moves with the vine bottom
 var detection_area: Area2D
 var grab_indicator: Sprite2D
@@ -28,6 +36,7 @@ var player_in_grab_area: bool = false
 
 # Vine segment animated sprites
 var vine_segment_sprites: Array[AnimatedSprite2D] = []
+var end_sprite: Sprite2D  # The sprite at the end of the vine
 
 func _ready():
 	vine_anchor = global_position
@@ -44,6 +53,9 @@ func _ready():
 	
 	# Create vine segment sprites
 	create_vine_segments()
+	
+	# Create end sprite
+	create_end_sprite()
 
 func setup_vine_holder_animation():
 	# If no sprite_frames is assigned to the vine holder, create a default one
@@ -113,10 +125,75 @@ func set_vine_length(new_length: float):
 	# Recreate vine segments with new length
 	create_vine_segments()
 	
+	# Update end sprite position
+	update_end_sprite_position()
+	
 	# Force a redraw to update the green circle
 	queue_redraw()
 	
 	print("Vine length changed to: ", vine_length)
+
+func create_end_sprite():
+	if end_sprite:
+		end_sprite.queue_free()
+	
+	end_sprite = Sprite2D.new()
+	add_child(end_sprite)
+	
+	# Set up the end sprite
+	if end_sprite_texture:
+		end_sprite.texture = end_sprite_texture
+	else:
+		# Create a default 16x16 texture if none is provided
+		end_sprite.texture = create_default_end_sprite_texture()
+	
+	# Apply inspector properties
+	end_sprite.scale = end_sprite_scale
+	end_sprite.modulate = end_sprite_modulate
+	end_sprite.rotation = deg_to_rad(end_sprite_rotation_degrees)
+	
+	# Position at the end of the vine
+	update_end_sprite_position()
+
+func create_default_end_sprite_texture() -> ImageTexture:
+	# Create a default 16x16 end sprite (like a small fruit or leaf)
+	var image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	image.fill(Color.TRANSPARENT)
+	
+	# Draw a small berry or fruit
+	var fruit_color = Color(0.8, 0.2, 0.2)  # Red
+	var highlight_color = Color(1.0, 0.4, 0.4)  # Light red
+	var stem_color = Color(0.4, 0.2, 0.1)  # Brown
+	
+	# Draw the fruit (circular)
+	for y in range(4, 12):
+		for x in range(4, 12):
+			var distance_from_center = Vector2(x - 8, y - 8).length()
+			if distance_from_center <= 3.5:
+				var color = fruit_color
+				# Add highlight
+				if x < 8 and y < 8:
+					color = fruit_color.lerp(highlight_color, 0.5)
+				image.set_pixel(x, y, color)
+	
+	# Draw small stem at top
+	image.set_pixel(8, 2, stem_color)
+	image.set_pixel(8, 3, stem_color)
+	
+	# Add small leaf
+	image.set_pixel(7, 3, Color(0.2, 0.6, 0.1))
+	image.set_pixel(6, 4, Color(0.2, 0.6, 0.1))
+	
+	return ImageTexture.create_from_image(image)
+
+func update_end_sprite_position():
+	if not end_sprite:
+		return
+	
+	if not is_player_grabbing:
+		# When hanging straight, position at the end of the vine
+		end_sprite.position = Vector2(0, vine_length) + end_sprite_offset
+	# When swinging, the position will be updated in update_vine_segments_for_swinging()
 
 func create_vine_segments():
 	# Clear existing segments
@@ -156,11 +233,12 @@ func create_vine_segments():
 		else:
 			print("Animation '", vine_segment_animation, "' not found in segment SpriteFrames")
 		
-		# Add some variety to segments (optional)
+		# Add some variety to segments (but NO FLIPPING)
 		if i % 4 == 1:
 			segment.modulate = Color(0.95, 0.9, 0.8)  # Slightly different tint
 		elif i % 4 == 2:
-			segment.flip_h = true  # Horizontal flip for variety
+			# REMOVED: segment.flip_h = true  # No more horizontal flipping
+			segment.modulate = Color(0.9, 1.0, 0.9)  # Slight green tint instead
 		elif i % 4 == 3:
 			segment.speed_scale = segment_animation_speed * 0.8  # Slightly slower animation
 		
@@ -234,41 +312,76 @@ func update_vine_segments_for_swinging():
 			
 			# Normal animation speed when not swinging
 			segment.speed_scale = segment_animation_speed
+		
+		# Position end sprite at the vine end when hanging straight
+		if end_sprite:
+			end_sprite.position = Vector2(0, vine_length) + end_sprite_offset
+			end_sprite.rotation = deg_to_rad(end_sprite_rotation_degrees)  # Reset to inspector rotation
 		return
 	
-	# When swinging, curve the vine segments toward the player
-	var to_player = player.global_position - vine_anchor
-	var vine_direction = to_player.normalized()
-	var actual_distance = to_player.length()
+	# When swinging, curve the vine segments toward the vine's visual bottom (not player position)
+	var to_vine_bottom = current_vine_bottom - vine_anchor
+	var vine_direction = to_vine_bottom.normalized()
+	var vine_visual_distance = vine_length  # Use the vine's visual length, not distance to player
 	
 	# Calculate swing intensity for animation effects
 	var swing_speed = player.velocity.length()
 	var swing_intensity = clamp(swing_speed / 300.0, 0.0, 2.0)  # 0-2x multiplier based on swing speed
 	
+	var last_segment_position = Vector2.ZERO
+	var last_segment_rotation = 0.0
+	
 	for i in range(vine_segment_sprites.size()):
 		var segment = vine_segment_sprites[i]
 		var segment_progress = float(i) / float(vine_segment_sprites.size() - 1) if vine_segment_sprites.size() > 1 else 0.0
 		
-		# Create a curved vine by interpolating between hanging down and pointing toward player
+		# Create a curved vine by interpolating between hanging down and pointing toward vine bottom
 		var straight_pos = Vector2(0, segment_progress * vine_length)
-		var curved_pos = vine_direction * (segment_progress * actual_distance)
+		var curved_pos = vine_direction * (segment_progress * vine_visual_distance)
 		
 		# Blend between straight and curved based on how far we are along the vine
 		var curve_strength = segment_progress * 0.8  # Stronger curve toward the end
 		segment.position = straight_pos.lerp(curved_pos, curve_strength)
 		
-		# Rotate segments to follow the vine direction
+		# Remember the last segment's position for the end sprite
+		if i == vine_segment_sprites.size() - 1:
+			last_segment_position = segment.position
+		
+		# Rotate segments to follow the vine direction (NO ROTATION LIMITS)
 		if i < vine_segment_sprites.size() - 1:
 			var next_progress = float(i + 1) / float(vine_segment_sprites.size() - 1)
 			var next_straight_pos = Vector2(0, next_progress * vine_length)
-			var next_curved_pos = vine_direction * (next_progress * actual_distance)
+			var next_curved_pos = vine_direction * (next_progress * vine_visual_distance)
 			var next_pos = next_straight_pos.lerp(next_curved_pos, next_progress * 0.8)
 			
 			var segment_direction = (next_pos - segment.position).normalized()
-			segment.rotation = atan2(segment_direction.x, -segment_direction.y)
+			
+			# Calculate rotation angle - NO CLAMPING OR LIMITS
+			var angle = atan2(-segment_direction.x, segment_direction.y)
+			segment.rotation = angle
+			
+			# Remember the last segment's rotation for the end sprite
+			if i == vine_segment_sprites.size() - 1:
+				last_segment_rotation = angle
+		else:
+			# Last segment uses the same angle as the previous segment
+			if i > 0:
+				segment.rotation = vine_segment_sprites[i-1].rotation
+				last_segment_rotation = segment.rotation
 		
 		# Speed up animation based on swing intensity
 		segment.speed_scale = segment_animation_speed * (1.0 + swing_intensity)
+	
+	# Position and rotate the end sprite to follow the last segment
+	if end_sprite:
+		# Position at the end of the curved vine path
+		var end_direction = vine_direction
+		var end_position = end_direction * vine_visual_distance + end_sprite_offset
+		end_sprite.position = end_position
+		
+		# Rotate the end sprite to match the vine direction + inspector rotation
+		var vine_rotation = atan2(vine_direction.x, -vine_direction.y)
+		end_sprite.rotation = vine_rotation + deg_to_rad(end_sprite_rotation_degrees)
 
 func create_detection_area():
 	# Create detection area as a circle that will move with the vine bottom
@@ -339,6 +452,16 @@ func _process(delta):
 	# Update vine segment positions for swinging animation
 	update_vine_segments_for_swinging()
 	
+	# Update end sprite properties from inspector (in case they changed)
+	if end_sprite:
+		if end_sprite_texture and end_sprite.texture != end_sprite_texture:
+			end_sprite.texture = end_sprite_texture
+		elif not end_sprite_texture and not end_sprite.texture:
+			end_sprite.texture = create_default_end_sprite_texture()
+		
+		end_sprite.scale = end_sprite_scale
+		end_sprite.modulate = end_sprite_modulate
+	
 	if debug_enabled and debug_label:
 		update_debug_info()
 	queue_redraw()
@@ -351,6 +474,7 @@ func update_debug_info():
 	debug_text += "GREEN ORBIT: " + str(int(vine_length)) + "px\n"
 	debug_text += "BLUE HITBOX: " + str(int(grab_range)) + "px\n"
 	debug_text += "SEGMENTS: " + str(vine_segment_sprites.size()) + "\n"
+	debug_text += "END SPRITE: " + ("Yes" if end_sprite else "No") + "\n"
 	debug_text += "In Grab Area: " + str(player_in_grab_area) + "\n"
 	debug_text += "Is Grabbing: " + str(is_player_grabbing) + "\n"
 	

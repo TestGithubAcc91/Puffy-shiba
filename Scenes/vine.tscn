@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://do0b3q7js88n6"]
+[gd_scene load_steps=6 format=3 uid="uid://do0b3q7js88n6"]
 
 [ext_resource type="Script" uid="uid://dlkalf5ltu2gm" path="res://Scripts/vine.gd" id="2_6slj2"]
 [ext_resource type="Texture2D" uid="uid://beqbqgsyafejv" path="res://Assets/sprites/InteractableSprites/vine_ring.png" id="3_krw3f"]
+[ext_resource type="Texture2D" uid="uid://j8xtoxwlr486" path="res://Assets/sprites/InteractableSprites/ring.png" id="3_xaa8b"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_6slj2"]
 atlas = ExtResource("3_krw3f")
@@ -21,3 +22,4 @@ animations = [{
 [node name="Vine" type="AnimatedSprite2D"]
 sprite_frames = SubResource("SpriteFrames_krw3f")
 script = ExtResource("2_6slj2")
+end_sprite_texture = ExtResource("3_xaa8b")

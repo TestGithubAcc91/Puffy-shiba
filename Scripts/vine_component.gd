@@ -1,4 +1,4 @@
-# VineComponent.gd - Fixed version that doesn't teleport player
+# VineComponent.gd - Fixed version that doesn't teleport player + 5 pixel offset
 extends Node
 
 @export var swing_speed: float = 400.0
@@ -73,6 +73,7 @@ func player_in_vine_detection_area() -> bool:
 	var distance = player_pos.distance_to(vine_bottom)
 	
 	return distance <= nearby_vine.grab_range
+
 func set_nearby_vine(vine: Vine):
 	nearby_vine = vine
 	print("Nearby vine set: ", vine)
@@ -89,16 +90,18 @@ func grab_vine(vine: Vine):
 	vine.attach_player(player)
 	
 	# FIXED: Always use the vine's fixed length, not the player's current distance
-	current_grab_distance = vine.vine_length
+	# Add 5 pixel offset so player appears to hang from the bottom of the last vine sprite
+	current_grab_distance = vine.vine_length + 5.0
 	
 	# Calculate direction from vine anchor to player
 	var to_player = player.global_position - vine.vine_anchor
 	var direction = to_player.normalized()
 	
-	# Position player at the correct distance from anchor (vine length)
-	player.global_position = vine.vine_anchor + direction * vine.vine_length
+	# Position player at the correct distance from anchor (vine length + 5 pixel offset)
+	player.global_position = vine.vine_anchor + direction * current_grab_distance
 	
-	# Calculate the swing angle based on the fixed vine length
+	# Calculate the swing angle based on the player's position relative to vine anchor
+	to_player = player.global_position - vine.vine_anchor
 	swing_angle = atan2(to_player.x, to_player.y)  # Angle from vertical down
 	
 	# Constrain initial angle if it's outside the allowed range
@@ -110,8 +113,7 @@ func grab_vine(vine: Vine):
 	swing_angular_velocity = 0.0
 	time_at_limit = 0.0  # Reset timer when grabbing vine
 	
-	print("Player grabs vine at fixed length. Distance from anchor: ", current_grab_distance, ", angle: ", rad_to_deg(swing_angle))
-	
+	print("Player grabs vine 5px below blue circle center. Distance from anchor: ", current_grab_distance, ", angle: ", rad_to_deg(swing_angle))
 	
 func release_vine():
 	if current_vine:
