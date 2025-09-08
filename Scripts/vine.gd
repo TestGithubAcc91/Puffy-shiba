@@ -1,4 +1,4 @@
-# Vine.gd - Version with AnimatedSprite2D-based vine visuals + End Sprite
+# Vine.gd - Version with horizontal approach tracking only
 extends AnimatedSprite2D
 class_name Vine
 
@@ -15,6 +15,7 @@ class_name Vine
 @export var vine_holder_animation: String = "default"  # Animation for the vine holder (this node)
 @export var segment_animation_speed: float = 1.0  # Speed multiplier for segment animations
 @export var randomize_segment_frame_offset: bool = true  # Randomize starting frame for variety
+@export var remove_end_segments: int = 0: set = set_remove_end_segments  # Number of segments to remove from the end
 
 # End sprite properties
 @export_group("End Sprite")
@@ -24,15 +25,29 @@ class_name Vine
 @export var end_sprite_modulate: Color = Color.WHITE  # Color tint for the end sprite
 @export var end_sprite_rotation_degrees: float = 0.0  # Rotation of the end sprite in degrees
 
+# MODIFIED: Horizontal approach tracking properties
+@export_group("Horizontal Approach Tracking")
+@export var approach_detection_radius: float = 100.0  # Radius of the approach detection area around vine origin
+@export var approach_speed_threshold: float = 20.0  # Minimum horizontal speed towards vine to count as "approaching"
+@export var approach_angle_tolerance_degrees: float = 60.0  # INCREASED: More forgiving angle for horizontal approach (±60° from direct horizontal line to vine)
+
 # Detection area that moves with the vine bottom
 var detection_area: Area2D
+var approach_detection_area: Area2D  # Area2D for tracking approach to vine origin
 var grab_indicator: Sprite2D
+var approach_indicator: Sprite2D  # Visual indicator for approach area
 var debug_label: Label
 var player: CharacterBody2D = null
 var is_player_grabbing: bool = false
 var vine_anchor: Vector2
 var current_vine_bottom: Vector2  # Current position of the vine bottom (blue circle)
 var player_in_grab_area: bool = false
+
+# MODIFIED: Horizontal approach tracking variables
+var player_in_approach_area: bool = false
+var time_moving_horizontally_towards_vine: float = 0.0  # RENAMED: Now specifically tracks horizontal movement
+var last_player_position: Vector2 = Vector2.ZERO
+var approach_angle_tolerance_radians: float
 
 # Vine segment animated sprites
 var vine_segment_sprites: Array[AnimatedSprite2D] = []
@@ -42,12 +57,15 @@ func _ready():
 	vine_anchor = global_position
 	# Initially, vine hangs straight down
 	current_vine_bottom = vine_anchor + Vector2(0, vine_length)
+	approach_angle_tolerance_radians = deg_to_rad(approach_angle_tolerance_degrees)
 	
 	# Set up the vine holder animation (this node)
 	setup_vine_holder_animation()
 	
 	create_detection_area()
+	create_approach_detection_area()
 	create_grab_indicator()
+	create_approach_indicator()
 	if debug_enabled:
 		create_debug_label()
 	
@@ -133,6 +151,104 @@ func set_vine_length(new_length: float):
 	
 	print("Vine length changed to: ", vine_length)
 
+func set_remove_end_segments(new_count: int):
+	remove_end_segments = max(0, new_count)  # Ensure it's not negative
+	# Recreate vine segments to apply the change
+	if vine_segment_sprites.size() > 0:
+		create_vine_segments()
+	print("Remove end segments set to: ", remove_end_segments)
+
+func create_approach_detection_area():
+	approach_detection_area = Area2D.new()
+	var collision_shape = CollisionShape2D.new()
+	var shape = CircleShape2D.new()
+	shape.radius = approach_detection_radius
+	collision_shape.shape = shape
+	
+	# Position at the vine origin (anchor point)
+	approach_detection_area.position = Vector2.ZERO
+	
+	# Set up Area2D properties
+	approach_detection_area.monitoring = true
+	approach_detection_area.monitorable = false
+	
+	# Set collision mask to layer 2 (where the player is)
+	approach_detection_area.collision_mask = 2
+	approach_detection_area.collision_layer = 0
+	
+	approach_detection_area.add_child(collision_shape)
+	add_child(approach_detection_area)
+	
+	# Connect signals
+	approach_detection_area.body_entered.connect(_on_approach_area_entered)
+	approach_detection_area.body_exited.connect(_on_approach_area_exited)
+	
+	print("Approach detection area created with radius: ", approach_detection_radius)
+
+func create_approach_indicator():
+	approach_indicator = Sprite2D.new()
+	add_child(approach_indicator)
+	
+	# Create a circular indicator texture (larger, more transparent)
+	var size = int(approach_detection_radius * 2)
+	var image = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(Color.TRANSPARENT)
+	
+	# Draw a circle outline
+	var center = Vector2(size / 2, size / 2)
+	var color = Color(1.0, 1.0, 0.0, 0.3)  # Semi-transparent yellow
+	
+	# Draw circle outline (simple method - not perfect but functional)
+	for y in range(size):
+		for x in range(size):
+			var dist = Vector2(x, y).distance_to(center)
+			if abs(dist - approach_detection_radius) < 2.0:  # 2-pixel thick outline
+				image.set_pixel(x, y, color)
+	
+	approach_indicator.texture = ImageTexture.create_from_image(image)
+	approach_indicator.position = Vector2.ZERO  # Centered on vine origin
+	approach_indicator.modulate = Color(1.0, 1.0, 1.0, 0.5)
+	approach_indicator.visible = debug_enabled  # Only show when debug is enabled
+
+func _on_approach_area_entered(body):
+	print("Body entered approach area: ", body.name)
+	if body.has_method("grab_vine"):
+		player_in_approach_area = true
+		last_player_position = body.global_position
+		print("Player entered approach detection area")
+
+func _on_approach_area_exited(body):
+	print("Body exited approach area: ", body.name)
+	if body.has_method("grab_vine"):
+		player_in_approach_area = false
+		time_moving_horizontally_towards_vine = 0.0  # Reset timer when leaving area
+		print("Player exited approach detection area - horizontal approach timer reset")
+
+# MODIFIED: Check if player is moving horizontally towards the vine origin
+func is_player_moving_horizontally_towards_vine() -> bool:
+	if not player or not player_in_approach_area:
+		return false
+	
+	var current_position = player.global_position
+	var movement_vector = current_position - last_player_position
+	
+	# MODIFIED: Only consider horizontal movement
+	var horizontal_movement = Vector2(movement_vector.x, 0.0)
+	
+	# Check if player is moving horizontally fast enough
+	var horizontal_movement_speed = horizontal_movement.length() / get_process_delta_time()
+	if horizontal_movement_speed < approach_speed_threshold:
+		return false
+	
+	# MODIFIED: Check if player is moving horizontally towards the vine
+	var to_vine_horizontal = Vector2(vine_anchor.x - current_position.x, 0.0).normalized()
+	var horizontal_movement_direction = horizontal_movement.normalized()
+	
+	# Calculate angle between horizontal movement direction and horizontal direction to vine
+	var angle_to_vine = horizontal_movement_direction.angle_to(to_vine_horizontal)
+	
+	return abs(angle_to_vine) <= approach_angle_tolerance_radians
+
 func create_end_sprite():
 	if end_sprite:
 		end_sprite.queue_free()
@@ -208,17 +324,20 @@ func create_vine_segments():
 		segment_frames = create_default_vine_segment_sprite_frames()
 	
 	# Calculate how many segments we need
-	var num_segments = max(1, int(vine_length / vine_segment_spacing))
+	var total_segments = max(1, int(vine_length / vine_segment_spacing))
 	
-	print("Creating ", num_segments, " animated vine segments for length ", vine_length)
+	# Calculate how many segments to actually create (subtract removed segments)
+	var visible_segments = max(0, total_segments - remove_end_segments)
 	
-	# Create animated segment sprites
-	for i in range(num_segments):
+	print("Creating ", visible_segments, " animated vine segments (", remove_end_segments, " removed from end) for length ", vine_length)
+	
+	# Create animated segment sprites (only the visible ones)
+	for i in range(visible_segments):
 		var segment = AnimatedSprite2D.new()
 		segment.sprite_frames = segment_frames
 		
-		# Position segment along the vine path
-		var segment_progress = float(i) / float(num_segments - 1) if num_segments > 1 else 0.0
+		# Position segment along the vine path (using original total segment count for spacing)
+		var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
 		var segment_y = segment_progress * vine_length
 		segment.position = Vector2(0, segment_y)
 		
@@ -237,7 +356,6 @@ func create_vine_segments():
 		if i % 4 == 1:
 			segment.modulate = Color(0.95, 0.9, 0.8)  # Slightly different tint
 		elif i % 4 == 2:
-			# REMOVED: segment.flip_h = true  # No more horizontal flipping
 			segment.modulate = Color(0.9, 1.0, 0.9)  # Slight green tint instead
 		elif i % 4 == 3:
 			segment.speed_scale = segment_animation_speed * 0.8  # Slightly slower animation
@@ -305,7 +423,9 @@ func update_vine_segments_for_swinging():
 		# Vine hangs straight down
 		for i in range(vine_segment_sprites.size()):
 			var segment = vine_segment_sprites[i]
-			var segment_progress = float(i) / float(vine_segment_sprites.size() - 1) if vine_segment_sprites.size() > 1 else 0.0
+			# Calculate segment progress based on total segments (including removed ones)
+			var total_segments = max(1, int(vine_length / vine_segment_spacing))
+			var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
 			var segment_y = segment_progress * vine_length
 			segment.position = Vector2(0, segment_y)
 			segment.rotation = 0  # No rotation when hanging straight
@@ -330,10 +450,12 @@ func update_vine_segments_for_swinging():
 	
 	var last_segment_position = Vector2.ZERO
 	var last_segment_rotation = 0.0
+	var total_segments = max(1, int(vine_length / vine_segment_spacing))
 	
 	for i in range(vine_segment_sprites.size()):
 		var segment = vine_segment_sprites[i]
-		var segment_progress = float(i) / float(vine_segment_sprites.size() - 1) if vine_segment_sprites.size() > 1 else 0.0
+		# Calculate segment progress based on total segments (including removed ones)
+		var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
 		
 		# Create a curved vine by interpolating between hanging down and pointing toward vine bottom
 		var straight_pos = Vector2(0, segment_progress * vine_length)
@@ -349,7 +471,7 @@ func update_vine_segments_for_swinging():
 		
 		# Rotate segments to follow the vine direction (NO ROTATION LIMITS)
 		if i < vine_segment_sprites.size() - 1:
-			var next_progress = float(i + 1) / float(vine_segment_sprites.size() - 1)
+			var next_progress = float(i + 1) / float(total_segments - 1)
 			var next_straight_pos = Vector2(0, next_progress * vine_length)
 			var next_curved_pos = vine_direction * (next_progress * vine_visual_distance)
 			var next_pos = next_straight_pos.lerp(next_curved_pos, next_progress * 0.8)
@@ -374,7 +496,7 @@ func update_vine_segments_for_swinging():
 	
 	# Position and rotate the end sprite to follow the last segment
 	if end_sprite:
-		# Position at the end of the curved vine path
+		# Position at the end of the curved vine path (always at vine_length, not affected by removed segments)
 		var end_direction = vine_direction
 		var end_position = end_direction * vine_visual_distance + end_sprite_offset
 		end_sprite.position = end_position
@@ -437,6 +559,20 @@ func create_debug_label():
 	debug_label.add_theme_constant_override("shadow_offset_y", 1)
 
 func _process(delta):
+	# MODIFIED: Update horizontal approach tracking with stop detection
+	if player_in_approach_area and player:
+		if is_player_moving_horizontally_towards_vine():
+			time_moving_horizontally_towards_vine += delta
+			print("Horizontal approach time: ", time_moving_horizontally_towards_vine)
+		else:
+			# NEW: Reset timer immediately if player stops or changes direction
+			if time_moving_horizontally_towards_vine > 0.0:
+				print("Player stopped or changed direction - resetting horizontal approach timer")
+			time_moving_horizontally_towards_vine = 0.0
+		
+		# Update last position for next frame's calculation
+		last_player_position = player.global_position
+	
 	# Update vine bottom position based on player position when swinging
 	if is_player_grabbing and player:
 		current_vine_bottom = player.global_position
@@ -462,6 +598,10 @@ func _process(delta):
 		end_sprite.scale = end_sprite_scale
 		end_sprite.modulate = end_sprite_modulate
 	
+	# Update approach indicator visibility based on debug setting
+	if approach_indicator:
+		approach_indicator.visible = debug_enabled
+	
 	if debug_enabled and debug_label:
 		update_debug_info()
 	queue_redraw()
@@ -473,17 +613,23 @@ func update_debug_info():
 	var debug_text = ""
 	debug_text += "GREEN ORBIT: " + str(int(vine_length)) + "px\n"
 	debug_text += "BLUE HITBOX: " + str(int(grab_range)) + "px\n"
+	debug_text += "APPROACH AREA: " + str(int(approach_detection_radius)) + "px\n"
 	debug_text += "SEGMENTS: " + str(vine_segment_sprites.size()) + "\n"
+	debug_text += "REMOVED: " + str(remove_end_segments) + "\n"
 	debug_text += "END SPRITE: " + ("Yes" if end_sprite else "No") + "\n"
 	debug_text += "In Grab Area: " + str(player_in_grab_area) + "\n"
+	debug_text += "In Approach Area: " + str(player_in_approach_area) + "\n"
 	debug_text += "Is Grabbing: " + str(is_player_grabbing) + "\n"
+	debug_text += "H-Approach Time: " + str(time_moving_horizontally_towards_vine) + "s\n"  # MODIFIED
+	debug_text += "H-Moving to Vine: " + str(is_player_moving_horizontally_towards_vine()) + "\n"  # MODIFIED
 	
 	if player:
 		var distance_from_anchor = vine_anchor.distance_to(player.global_position)
 		var distance_from_blue_circle = current_vine_bottom.distance_to(player.global_position)
 		debug_text += "Player->Anchor: " + str(int(distance_from_anchor)) + "px\n"
 		debug_text += "Player->BlueCircle: " + str(int(distance_from_blue_circle)) + "px\n"
-		debug_text += "Player Pos: " + str(Vector2i(player.global_position))
+		debug_text += "Player Pos: " + str(Vector2i(player.global_position)) + "\n"
+		debug_text += "H-Speed: " + str(int(Vector2(player.velocity.x, 0.0).length())) + "px/s\n"  # MODIFIED: Show horizontal speed only
 	else:
 		debug_text += "No Player\n"
 	
@@ -500,6 +646,17 @@ func _draw():
 		arc_color.a = 0.4
 		draw_arc(Vector2.ZERO, vine_length, 0, TAU, 64, arc_color, 3.0)
 		
+		# Draw the YELLOW APPROACH AREA - circular area around vine origin
+		var approach_color = Color.YELLOW
+		approach_color.a = 0.2
+		draw_arc(Vector2.ZERO, approach_detection_radius, 0, TAU, 64, approach_color, 2.0)
+		
+		# MODIFIED: Highlight approach area when player is moving horizontally towards vine
+		if player_in_approach_area and is_player_moving_horizontally_towards_vine():
+			var highlight_color = Color.ORANGE
+			highlight_color.a = 0.4
+			draw_arc(Vector2.ZERO, approach_detection_radius, 0, TAU, 64, highlight_color, 3.0)
+		
 		# Draw the BLUE CIRCLE GIZMO - current position of the grab area (detection area)
 		var blue_circle_position = detection_area.position
 		draw_circle(blue_circle_position, grab_range, Color.BLUE)
@@ -510,6 +667,22 @@ func _draw():
 		
 		# Draw a small dot at the exact center of the blue circle for precision
 		draw_circle(blue_circle_position, 2, Color.WHITE)
+		
+		# MODIFIED: Draw horizontal approach timer visualization (progress bar near vine origin)
+		if time_moving_horizontally_towards_vine > 0.0:
+			var bar_width = 40.0
+			var bar_height = 6.0
+			var bar_position = Vector2(-bar_width / 2, -30)  # Above the vine anchor
+			
+			# Background bar
+			draw_rect(Rect2(bar_position, Vector2(bar_width, bar_height)), Color.BLACK)
+			
+			# Progress bar (clamped to a reasonable max time for visualization)
+			var max_time_for_display = 3.0  # 3 seconds max for full bar
+			var progress = clamp(time_moving_horizontally_towards_vine / max_time_for_display, 0.0, 1.0)
+			var progress_width = bar_width * progress
+			var progress_color = Color.YELLOW.lerp(Color.ORANGE, progress)
+			draw_rect(Rect2(bar_position, Vector2(progress_width, bar_height)), progress_color)
 
 func _on_body_entered(body):
 	print("Body entered vine grab area: ", body.name)
@@ -572,3 +745,19 @@ func get_distance_to_player() -> float:
 		return 0.0
 	
 	return vine_anchor.distance_to(player.global_position)
+
+# MODIFIED: Get the current horizontal approach time
+func get_approach_time() -> float:
+	return time_moving_horizontally_towards_vine
+
+# Check if player is currently in the approach area
+func is_player_in_approach_area() -> bool:
+	return player_in_approach_area
+
+# MODIFIED: Reset the horizontal approach timer
+func reset_approach_timer():
+	time_moving_horizontally_towards_vine = 0.0
+
+# MODIFIED: Get horizontal approach progress as a normalized value (0.0 to 1.0)
+func get_approach_progress(max_time: float = 3.0) -> float:
+	return clamp(time_moving_horizontally_towards_vine / max_time, 0.0, 1.0)

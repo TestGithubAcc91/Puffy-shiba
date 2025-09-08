@@ -582,8 +582,9 @@ vine_length = 45.0
 swing_force = 20.0
 grab_range = 5.0
 debug_enabled = false
-vine_segment_spacing = 2.0
+vine_segment_spacing = 3.0
 randomize_segment_frame_offset = false
+remove_end_segments = 1
 
 [node name="Label" type="Label" parent="LevelHolder"]
 offset_left = -85.0

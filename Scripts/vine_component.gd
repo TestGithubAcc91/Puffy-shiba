@@ -1,4 +1,4 @@
-# VineComponent.gd - Version with improved input blocking system
+# VineComponent.gd - Version with approach-based initial speed boost
 extends Node
 
 @export var swing_speed: float = 400.0
@@ -15,6 +15,17 @@ extends Node
 @export var slowdown_curve_exponent: float = 2.0
 @export var max_slowdown_factor: float = 0.7
 
+# NEW: Approach speed boost parameters
+@export_group("Approach Speed Boost")
+@export var base_initial_boost: float = 100.0  # Base boost when grabbing vine
+@export var max_approach_boost: float = 300.0  # Maximum additional boost from approach time
+@export var approach_time_for_max_boost: float = 2.0  # Time needed to reach max boost
+@export var approach_boost_curve: float = 1.5  # Curve for boost progression (higher = more exponential)
+@export var player_velocity_boost_multiplier: float = 0.8  # How much player's velocity contributes to initial boost
+@export var approach_direction_boost_multiplier: float = 1.2  # Extra boost when approaching from optimal angle
+@export var min_approach_time_for_boost: float = 0.5  # Minimum time needed to get any significant boost
+
+
 var current_vine: Vine = null
 var is_swinging: bool = false
 var player: CharacterBody2D
@@ -29,7 +40,7 @@ var time_at_limit: float = 0.0
 var recently_released_vine: Vine = null
 var is_grounded: bool = false
 
-# New variables for input blocking system
+# Input blocking system variables
 var inputs_blocked: bool = false
 var blocked_direction: int = 0  # -1 for left, 1 for right, 0 for none
 var last_swing_direction: int = 0  # Track which direction we were swinging when blocked
@@ -84,6 +95,74 @@ func clear_nearby_vine(vine: Vine):
 	if nearby_vine == vine:
 		nearby_vine = null
 
+# NEW: Calculate initial speed boost based on approach
+func calculate_initial_speed_boost(vine: Vine) -> float:
+	var total_boost = base_initial_boost
+	
+	# Get approach time from the vine
+	var approach_time = vine.get_approach_time()
+	
+	if approach_time > 0.0:
+		# NEW: Apply minimum time threshold - barely any boost if under 0.5 seconds
+		if approach_time < min_approach_time_for_boost:
+			# Very minimal boost for quick approaches
+			var minimal_boost = max_approach_boost * 0.1  # Just 10% of max boost
+			total_boost += minimal_boost
+			print("Minimal approach time (", approach_time, "s < ", min_approach_time_for_boost, "s) - minimal boost: ", minimal_boost)
+		else:
+			# Calculate approach time boost with exponential curve
+			var time_progress = clamp((approach_time - min_approach_time_for_boost) / 
+				(approach_time_for_max_boost - min_approach_time_for_boost), 0.0, 1.0)
+			var curved_progress = pow(time_progress, approach_boost_curve)
+			var approach_boost = curved_progress * max_approach_boost
+			
+			total_boost += approach_boost
+			
+			print("Approach time: ", approach_time, "s, Boost: ", approach_boost)
+	
+	# Add boost from player's current velocity
+	if player:
+		var velocity_magnitude = player.velocity.length()
+		var velocity_boost = velocity_magnitude * player_velocity_boost_multiplier
+		
+		# Check if player is moving toward the vine for directional bonus
+		var to_vine = (vine.vine_anchor - player.global_position).normalized()
+		var velocity_direction = player.velocity.normalized()
+		var dot_product = velocity_direction.dot(to_vine)
+		
+		# Apply directional multiplier if moving toward vine (dot > 0)
+		if dot_product > 0.0:
+			velocity_boost *= approach_direction_boost_multiplier * dot_product
+			print("Directional bonus applied: ", dot_product)
+		
+		total_boost += velocity_boost
+		print("Velocity boost: ", velocity_boost, " (from speed: ", velocity_magnitude, ")")
+	
+	print("Total initial boost: ", total_boost)
+	return total_boost
+
+# NEW: Determine initial swing direction based on approach
+func determine_initial_swing_direction(vine: Vine) -> float:
+	if not player:
+		return 1.0  # Default direction
+	
+	# Check player's velocity direction
+	var velocity_direction = player.velocity.normalized()
+	
+	# Check approach direction (from vine to player)
+	var to_player = (player.global_position - vine.vine_anchor).normalized()
+	
+	# Determine if player is approaching from left or right
+	var horizontal_component = velocity_direction.x
+	
+	# If player has significant horizontal velocity, use that
+	if abs(horizontal_component) > 0.3:
+		return sign(horizontal_component)
+	
+	# Otherwise, use position relative to vine
+	var player_relative_x = player.global_position.x - vine.vine_anchor.x
+	return sign(player_relative_x) if abs(player_relative_x) > 5.0 else 1.0
+
 func grab_vine(vine: Vine):
 	current_vine = vine
 	is_swinging = true
@@ -109,9 +188,24 @@ func grab_vine(vine: Vine):
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
-	swing_angular_velocity = 0.0
+	# NEW: Apply initial speed boost based on approach
+	var initial_boost = calculate_initial_speed_boost(vine)
+	var swing_direction = determine_initial_swing_direction(vine)
+	
+	# Convert boost to angular velocity
+	swing_angular_velocity = (initial_boost / current_grab_distance) * swing_direction
+	
+	# Clamp the initial angular velocity to prevent excessive speeds
+	var max_initial_angular_velocity = (max_swing_velocity * 1.2) / current_grab_distance
+	swing_angular_velocity = clamp(swing_angular_velocity, -max_initial_angular_velocity, max_initial_angular_velocity)
+	
+	print("Initial angular velocity: ", swing_angular_velocity, " (direction: ", swing_direction, ")")
+	
 	time_at_limit = 0.0
 	
+	# Reset the vine's approach timer since we've grabbed it
+	vine.reset_approach_timer()
+
 func release_vine():
 	if current_vine:
 		recently_released_vine = current_vine
@@ -154,7 +248,7 @@ func handle_vine_swinging(delta):
 	else:
 		time_at_limit = 0.0
 	
-	# NEW: Check if we should block inputs based on swing angle
+	# Check if we should block inputs based on swing angle
 	check_input_blocking()
 	
 	# Get player input, but respect blocking
@@ -227,7 +321,6 @@ func handle_vine_swinging(delta):
 	if Input.is_action_just_pressed("Jump"):
 		release_vine()
 
-# NEW FUNCTION: Check if inputs should be blocked or unblocked
 func check_input_blocking():
 	var abs_angle = abs(swing_angle)
 	
