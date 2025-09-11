@@ -8,14 +8,14 @@ const HIGH_JUMP_VELOCITY = -350.0
 @onready var glint_sprite: AnimatedSprite2D = $GlintSprite
 @onready var health_script = $HealthScript
 @onready var parry_label: Label = $Late_EarlyLabel
-@onready var vine_component = $VineComponent  # Reference to VineComponent
+@onready var vine_component = $VineComponent
 
-# Air puff effect for dash
 @export var air_puff_scene: PackedScene
 @export var air_puffV_scene: PackedScene
 
 var last_attack_was_unparryable: bool = false
 
+# Parry variables
 var parry_timer: Timer
 var parry_early_timer: Timer
 var is_parrying: bool = false
@@ -30,6 +30,8 @@ var damage_timer: Timer
 var recently_took_damage: bool = false
 var parry_end_timer: Timer
 var recently_parry_ended: bool = false
+
+# Text display variables
 var early_text_timer: Timer
 var showing_early_text: bool = false
 var early_fade_timer: Timer
@@ -41,7 +43,7 @@ var is_fading_late_text: bool = false
 var showing_late_text: bool = false
 @export var late_fade_duration: float = 0.5
 
-# New variables for parry animation and time freeze
+# Parry freeze variables
 var parry_freeze_timer: Timer
 var is_in_parry_freeze: bool = false
 var parry_pre_freeze_timer: Timer
@@ -49,6 +51,7 @@ var is_in_pre_freeze_parry: bool = false
 @export var parry_freeze_duration: float = 0.3
 @export var parry_pre_freeze_duration: float = 0.1
 
+# Charge system variables
 @export var max_parry_stacks: int = 3
 var current_parry_stacks: int = 0
 signal parry_stacks_changed(new_stacks: int)
@@ -58,7 +61,6 @@ signal parry_stacks_changed(new_stacks: int)
 @export var charge_texture_3: Texture2D
 @export var charge_texture_4: Texture2D
 @export var empty_charge_texture: Texture2D
-
 @export var empty_charge_sprite_1: Sprite2D
 @export var empty_charge_sprite_2: Sprite2D
 @export var empty_charge_sprite_3: Sprite2D
@@ -67,6 +69,7 @@ var empty_charge_sprites: Array[Sprite2D] = []
 var charge_textures: Array[Texture2D] = []
 var assigned_textures: Array[Texture2D] = []
 
+# Movement variables
 @export var dash_distance: float = 200.0
 @export var dash_speed: float = 800.0
 @export var dash_cooldown: float = 0.5
@@ -74,8 +77,8 @@ var assigned_textures: Array[Texture2D] = []
 @export var bounce_delay: float = 0.2
 @export var bounce_distance: float = 150.0
 @export var bounce_speed: float = 600.0
-
 @export var high_jump_cooldown: float = 2.0
+
 var high_jump_cooldown_timer: Timer
 var can_high_jump: bool = true
 var dash_timer: Timer
@@ -88,270 +91,229 @@ var dash_started_on_ground: bool = false
 var was_on_ground_before_dash: bool = false
 var dash_start_time: float = 0.0
 var dash_duration: float = 0.0
-var pending_bounce_direction: float = 0.0
 var is_bouncing: bool = false
 var bounce_start_time: float = 0.0
 var bounce_duration: float = 0.0
 var bounce_direction_vector: Vector2 = Vector2.ZERO
 
-func _physics_process(delta: float) -> void:
-	# No physics blocking - let time_scale handle the freeze
-	
-	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1:
-		activate_dash()
-	
-	if is_dashing:
-		velocity.x = dash_direction.x * (dash_distance / dash_duration)
-		
-		var current_time = Time.get_ticks_msec() / 1000.0
-		var dash_elapsed = current_time - dash_start_time
-		var dash_progress = dash_elapsed / dash_duration
-		
-		if dash_progress < 0.5:
-			velocity.y = 0.0
-		else:
-			if not is_on_floor():
-				velocity += get_gravity() * delta
-		
-		move_and_slide()
-		
-		if is_on_wall_only():
-			handle_wall_bounce()
-			return
-		
-		check_dash_ground_landing()
-		return
-	
-	if is_bouncing:
-		var current_time = Time.get_ticks_msec() / 1000.0
-		var bounce_elapsed = current_time - bounce_start_time
-		
-		if bounce_elapsed >= bounce_duration:
-			end_bounce()
-		else:
-			velocity.x = bounce_direction_vector.x * (bounce_distance / bounce_duration)
-		
-		if not is_on_floor():
-			velocity += get_gravity() * delta
-		
-		move_and_slide()
-		return
-	
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-	
-	if Input.is_action_just_pressed("Jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-	
-	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2:
-		activate_high_jump()
-	
-	if Input.is_action_just_pressed("Parry") and can_parry:
-		activate_parry()
-	
-	# MODIFIED: Get direction input but respect vine component input blocking
-	var direction := get_effective_horizontal_input()
-	
-	if direction > 0:
-		animated_sprite.flip_h = false
-		if glint_sprite:
-			glint_sprite.position.x = abs(glint_sprite.position.x) * -1  # Negative x when facing right
-	elif direction < 0:
-		animated_sprite.flip_h = true
-		if glint_sprite:
-			glint_sprite.position.x = abs(glint_sprite.position.x)  # Positive x when facing left
-	
-	# Only update animations if not playing special animations (parry or dash)
-	if not is_in_pre_freeze_parry and not is_dashing:
-		if is_on_floor():
-			if direction == 0:
-				animated_sprite.play("Idle")
-			else:
-				animated_sprite.play("Run")
-		else: 
-			animated_sprite.play("Jump")
-	
-	if direction:
-		velocity.x = direction * SPEED
-	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED)
-	
-	move_and_slide()
-
-# NEW FUNCTION: Get horizontal input but respect vine component blocking
-func get_effective_horizontal_input() -> float:
-	# If we're swinging and inputs are blocked by the vine component, return 0
-	if vine_component and vine_component.is_swinging and vine_component.inputs_blocked:
-		return 0.0
-	
-	# Otherwise, return normal input
-	return Input.get_axis("Move_Left", "Move_Right")
-
-func spawn_air_puff():
-	if air_puff_scene:
-		var air_puff = air_puff_scene.instantiate()
-		get_parent().add_child(air_puff)
-		
-		# Position the air puff 3 pixels higher than player position
-		air_puff.global_position = global_position + Vector2(0, -6)
-		
-		# Optional: Flip the air puff based on dash direction
-		if air_puff.has_method("set_direction"):
-			air_puff.set_direction(dash_direction)
-		elif air_puff is AnimatedSprite2D:
-			air_puff.flip_h = (dash_direction.x < 0)
-		
-		# Remove the air puff after animation finishes
-		if air_puff is AnimatedSprite2D:
-			# Connect to animation_finished signal to remove the puff
-			air_puff.animation_finished.connect(func(): air_puff.queue_free())
-			# Also add a safety timer in case the animation doesn't have an end
-			var cleanup_timer = Timer.new()
-			cleanup_timer.wait_time = 2.0  # Fallback cleanup after 2 seconds
-			cleanup_timer.one_shot = true
-			cleanup_timer.timeout.connect(func(): 
-				if is_instance_valid(air_puff):
-					air_puff.queue_free()
-				cleanup_timer.queue_free()
-			)
-			air_puff.add_child(cleanup_timer)
-			cleanup_timer.start()
-			
-func spawn_air_puffV():
-	if air_puffV_scene:
-		var air_puff = air_puffV_scene.instantiate()
-		get_parent().add_child(air_puff)
-		
-		# Position the air puff 6 pixels higher than player position
-		air_puff.global_position = global_position + Vector2(0, -6)
-		
-		# Ensure the rotation is applied (90 degrees for vertical orientation)
-		air_puff.rotation_degrees = -90
-		
-		# Remove the air puff after animation finishes
-		if air_puff is AnimatedSprite2D:
-			# Connect to animation_finished signal to remove the puff
-			air_puff.animation_finished.connect(func(): air_puff.queue_free())
-			# Also add a safety timer in case the animation doesn't have an end
-			var cleanup_timer = Timer.new()
-			cleanup_timer.wait_time = 2.0  # Fallback cleanup after 2 seconds
-			cleanup_timer.one_shot = true
-			cleanup_timer.timeout.connect(func(): 
-				if is_instance_valid(air_puff):
-					air_puff.queue_free()
-				cleanup_timer.queue_free()
-			)
-			air_puff.add_child(cleanup_timer)
-			cleanup_timer.start()
+var external_momentum: Vector2 = Vector2.ZERO
+var momentum_decay_rate: float = 2.0
+var min_momentum_threshold: float = 20.0
 
 func _ready():
-	# Connect to health script's damage signal instead of iframe signals
 	health_script.died.connect(_on_player_died)
-	# CHANGED: Connect to health_decreased instead of damage_taken for parry feedback
 	if health_script.has_signal("health_decreased"):
 		health_script.health_decreased.connect(_on_health_decreased)
 	
 	setup_charge_system()
-	
+	setup_ui()
+	setup_durations()
+	setup_timers()
+
+func setup_ui():
 	if glint_sprite:
 		glint_sprite.visible = false
-	
 	if parry_label:
 		if not showing_early_text and not showing_late_text:
 			parry_label.visible = false
 			parry_label.text = ""
-	
+
+func setup_durations():
 	dash_duration = dash_distance / dash_speed
 	bounce_duration = bounce_distance / bounce_speed
-	
-	parry_timer = Timer.new()
-	parry_timer.wait_time = parry_duration
-	parry_timer.one_shot = true
-	parry_timer.timeout.connect(_on_parry_timeout)
-	add_child(parry_timer)
-	
-	parry_early_timer = Timer.new()
-	parry_early_timer.wait_time = parry_early_delay
-	parry_early_timer.one_shot = true
-	parry_early_timer.timeout.connect(_on_parry_early_timeout)
-	add_child(parry_early_timer)
-	
-	parry_cooldown_timer = Timer.new()
-	parry_cooldown_timer.one_shot = true
-	parry_cooldown_timer.timeout.connect(_on_parry_cooldown_timeout)
-	add_child(parry_cooldown_timer)
-	
-	# New timers for parry animation and freeze
-	parry_pre_freeze_timer = Timer.new()
-	parry_pre_freeze_timer.wait_time = parry_pre_freeze_duration
-	parry_pre_freeze_timer.one_shot = true
-	parry_pre_freeze_timer.timeout.connect(_on_parry_pre_freeze_timeout)
-	add_child(parry_pre_freeze_timer)
-	
-	parry_freeze_timer = Timer.new()
-	parry_freeze_timer.wait_time = parry_freeze_duration
-	parry_freeze_timer.one_shot = true
-	parry_freeze_timer.timeout.connect(_on_parry_freeze_timeout)
-	add_child(parry_freeze_timer)
-	
-	dash_timer = Timer.new()
-	dash_timer.wait_time = dash_duration
-	dash_timer.one_shot = true
-	dash_timer.timeout.connect(_on_dash_timeout)
-	add_child(dash_timer)
-	
-	dash_cooldown_timer = Timer.new()
-	dash_cooldown_timer.wait_time = dash_cooldown
-	dash_cooldown_timer.one_shot = true
-	dash_cooldown_timer.timeout.connect(_on_dash_cooldown_timeout)
-	add_child(dash_cooldown_timer)
-	
-	bounce_timer = Timer.new()
-	bounce_timer.wait_time = bounce_delay
-	bounce_timer.one_shot = true
-	bounce_timer.timeout.connect(_on_bounce_timeout)
-	add_child(bounce_timer)
-	
-	high_jump_cooldown_timer = Timer.new()
-	high_jump_cooldown_timer.wait_time = high_jump_cooldown
-	high_jump_cooldown_timer.one_shot = true
-	high_jump_cooldown_timer.timeout.connect(_on_high_jump_cooldown_timeout)
-	add_child(high_jump_cooldown_timer)
-	
-	damage_timer = Timer.new()
-	damage_timer.wait_time = parry_early_delay
-	damage_timer.one_shot = true
-	damage_timer.timeout.connect(_on_damage_timer_timeout)
-	add_child(damage_timer)
-	
-	parry_end_timer = Timer.new()
-	parry_end_timer.wait_time = parry_early_delay
-	parry_end_timer.one_shot = true
-	parry_end_timer.timeout.connect(_on_parry_end_timer_timeout)
-	add_child(parry_end_timer)
-	
-	early_text_timer = Timer.new()
-	early_text_timer.wait_time = 1.0
-	early_text_timer.one_shot = true
-	early_text_timer.timeout.connect(_on_early_text_timeout)
-	add_child(early_text_timer)
-	
-	early_fade_timer = Timer.new()
-	early_fade_timer.wait_time = 0.02
-	early_fade_timer.timeout.connect(_on_early_fade_tick)
-	add_child(early_fade_timer)
-	
-	late_text_timer = Timer.new()
-	late_text_timer.wait_time = 1.0
-	late_text_timer.one_shot = true
-	late_text_timer.timeout.connect(_on_late_text_timeout)
-	add_child(late_text_timer)
-	
-	late_fade_timer = Timer.new()
-	late_fade_timer.wait_time = 0.02
-	late_fade_timer.timeout.connect(_on_late_fade_tick)
-	add_child(late_fade_timer)
 
+func setup_timers():
+	var timer_configs = [
+		{timer = "parry_timer", wait_time = parry_duration, callback = "_on_parry_timeout"},
+		{timer = "parry_early_timer", wait_time = parry_early_delay, callback = "_on_parry_early_timeout"},
+		{timer = "parry_cooldown_timer", callback = "_on_parry_cooldown_timeout"},
+		{timer = "parry_pre_freeze_timer", wait_time = parry_pre_freeze_duration, callback = "_on_parry_pre_freeze_timeout"},
+		{timer = "parry_freeze_timer", wait_time = parry_freeze_duration, callback = "_on_parry_freeze_timeout"},
+		{timer = "dash_timer", wait_time = dash_duration, callback = "_on_dash_timeout"},
+		{timer = "dash_cooldown_timer", wait_time = dash_cooldown, callback = "_on_dash_cooldown_timeout"},
+		{timer = "bounce_timer", wait_time = bounce_delay, callback = "_on_bounce_timeout"},
+		{timer = "high_jump_cooldown_timer", wait_time = high_jump_cooldown, callback = "_on_high_jump_cooldown_timeout"},
+		{timer = "damage_timer", wait_time = parry_early_delay, callback = "_on_damage_timer_timeout"},
+		{timer = "parry_end_timer", wait_time = parry_early_delay, callback = "_on_parry_end_timer_timeout"},
+		{timer = "early_text_timer", wait_time = 1.0, callback = "_on_early_text_timeout"},
+		{timer = "early_fade_timer", wait_time = 0.02, callback = "_on_early_fade_tick"},
+		{timer = "late_text_timer", wait_time = 1.0, callback = "_on_late_text_timeout"},
+		{timer = "late_fade_timer", wait_time = 0.02, callback = "_on_late_fade_tick"}
+	]
+	
+	for config in timer_configs:
+		var timer = Timer.new()
+		if "wait_time" in config:
+			timer.wait_time = config.wait_time
+		timer.one_shot = true
+		timer.timeout.connect(Callable(self, config.callback))
+		add_child(timer)
+		set(config.timer, timer)
+
+func _physics_process(delta: float) -> void:
+	handle_input()
+	handle_movement(delta)
+
+func handle_input():
+	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1:
+		activate_dash()
+	if Input.is_action_just_pressed("Jump") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
+	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2:
+		activate_high_jump()
+	if Input.is_action_just_pressed("Parry") and can_parry:
+		activate_parry()
+
+func handle_movement(delta: float):
+	if is_dashing:
+		handle_dash_movement(delta)
+	elif is_bouncing:
+		handle_bounce_movement(delta)
+	else:
+		handle_normal_movement(delta)
+
+func handle_dash_movement(delta: float):
+	velocity.x = dash_direction.x * (dash_distance / dash_duration)
+	
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var dash_elapsed = current_time - dash_start_time
+	var dash_progress = dash_elapsed / dash_duration
+	
+	if dash_progress < 0.5:
+		velocity.y = 0.0
+	else:
+		if not is_on_floor():
+			velocity += get_gravity() * delta
+	
+	move_and_slide()
+	
+	if is_on_wall_only():
+		handle_wall_bounce()
+		return
+	
+	check_dash_ground_landing()
+
+func handle_bounce_movement(delta: float):
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var bounce_elapsed = current_time - bounce_start_time
+	
+	if bounce_elapsed >= bounce_duration:
+		end_bounce()
+	else:
+		velocity.x = bounce_direction_vector.x * (bounce_distance / bounce_duration)
+	
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+	
+	move_and_slide()
+
+func handle_normal_movement(delta: float):
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+	
+	var direction := get_effective_horizontal_input()
+	update_sprite_direction(direction)
+	update_animations(direction)
+	
+	# Apply external momentum (like from vine swinging)
+	if external_momentum.length() > min_momentum_threshold:
+		# Apply momentum to velocity
+		velocity.x += external_momentum.x * delta
+		
+		# Decay momentum over time
+		external_momentum = external_momentum.move_toward(Vector2.ZERO, external_momentum.length() * momentum_decay_rate * delta)
+		
+		# If player is giving input, reduce momentum faster in opposite direction
+		if direction != 0.0:
+			var input_opposes_momentum = (direction > 0 and external_momentum.x < 0) or (direction < 0 and external_momentum.x > 0)
+			if input_opposes_momentum:
+				external_momentum.x = move_toward(external_momentum.x, 0.0, abs(external_momentum.x) * momentum_decay_rate * 2.0 * delta)
+	else:
+		external_momentum = Vector2.ZERO
+	
+	# Handle normal movement input
+	if direction:
+		# If there's input, blend with momentum or override it
+		if external_momentum.length() > min_momentum_threshold:
+			# Blend input with momentum
+			var input_velocity = direction * SPEED
+			var momentum_influence = clamp(external_momentum.length() / 200.0, 0.0, 1.0)
+			velocity.x = lerp(input_velocity, velocity.x, momentum_influence * 0.3)
+		else:
+			velocity.x = direction * SPEED
+	else:
+		# No input - let momentum carry the player, but add air resistance
+		if external_momentum.length() <= min_momentum_threshold:
+			# No significant momentum, apply normal deceleration
+			velocity.x = move_toward(velocity.x, 0, SPEED * 0.5)  # Reduced deceleration to preserve some momentum
+	
+	move_and_slide()
+	
+	
+func apply_external_momentum(momentum: Vector2):
+	external_momentum = momentum
+	print("Player received momentum: ", momentum)
+
+func get_effective_horizontal_input() -> float:
+	if vine_component and vine_component.is_swinging and vine_component.inputs_blocked:
+		return 0.0
+	return Input.get_axis("Move_Left", "Move_Right")
+
+func update_sprite_direction(direction: float):
+	if direction > 0:
+		animated_sprite.flip_h = false
+		if glint_sprite:
+			glint_sprite.position.x = abs(glint_sprite.position.x) * -1
+	elif direction < 0:
+		animated_sprite.flip_h = true
+		if glint_sprite:
+			glint_sprite.position.x = abs(glint_sprite.position.x)
+
+func update_animations(direction: float):
+	if not is_in_pre_freeze_parry and not is_dashing:
+		if is_on_floor():
+			animated_sprite.play("Idle" if direction == 0 else "Run")
+		else:
+			animated_sprite.play("Jump")
+
+func spawn_air_puff():
+	spawn_air_effect(air_puff_scene, Vector2(0, -6), false)
+
+func spawn_air_puffV():
+	spawn_air_effect(air_puffV_scene, Vector2(0, -6), true)
+
+func spawn_air_effect(scene: PackedScene, offset: Vector2, is_vertical: bool):
+	if not scene:
+		return
+		
+	var air_puff = scene.instantiate()
+	get_parent().add_child(air_puff)
+	air_puff.global_position = global_position + offset
+	
+	if is_vertical:
+		air_puff.rotation_degrees = -90
+	elif air_puff.has_method("set_direction"):
+		air_puff.set_direction(dash_direction)
+	elif air_puff is AnimatedSprite2D:
+		air_puff.flip_h = (dash_direction.x < 0)
+	
+	setup_air_puff_cleanup(air_puff)
+
+func setup_air_puff_cleanup(air_puff):
+	if air_puff is AnimatedSprite2D:
+		air_puff.animation_finished.connect(func(): air_puff.queue_free())
+		var cleanup_timer = Timer.new()
+		cleanup_timer.wait_time = 2.0
+		cleanup_timer.one_shot = true
+		cleanup_timer.timeout.connect(func(): 
+			if is_instance_valid(air_puff):
+				air_puff.queue_free()
+			cleanup_timer.queue_free()
+		)
+		air_puff.add_child(cleanup_timer)
+		cleanup_timer.start()
+
+# Parry system
 func activate_parry():
 	if not can_parry:
 		return
@@ -359,8 +321,6 @@ func activate_parry():
 	is_parrying = true
 	can_parry = false
 	parry_was_successful = false
-	# REMOVED: last_attack_was_unparryable = false  # Don't reset here!
-	
 	health_script.is_invulnerable = true
 	
 	if glint_sprite:
@@ -371,118 +331,79 @@ func activate_parry():
 	if recently_took_damage:
 		parry_early_timer.start()
 
-func _on_parry_timeout():
-	# Always end parry effects when timer expires (whether successful or not)
-	health_script.is_invulnerable = false
-	
-	if glint_sprite:
-		glint_sprite.visible = false
-		glint_sprite.stop()
-	
-	if parry_early_timer.time_left > 0:
-		parry_early_timer.stop()
-	
-	recently_parry_ended = true
-	parry_end_timer.start()
-	
-	# Reset the unparryable flag when parry window fully ends
-	last_attack_was_unparryable = false
-	
-	# Only set parry cooldown if it wasn't successful
-	if not parry_was_successful:
-		is_parrying = false  # End parrying state if not already ended by success
-		parry_cooldown_timer.wait_time = parry_fail_cooldown
-		parry_cooldown_timer.start()
-	else:
-		can_parry = true
-
-func _on_parry_early_timeout():
-	# Only show "Late!" text if the attack was parryable
-	if is_parrying and not parry_was_successful and parry_label and not last_attack_was_unparryable:
-		parry_label.text = "Late!"
-		parry_label.visible = true
-		parry_label.modulate.a = 1.0
-		showing_late_text = true
-		is_fading_late_text = false
-		late_text_timer.start()
-
-func _on_parry_cooldown_timeout():
-	can_parry = true
-
-func _on_damage_timer_timeout():
-	recently_took_damage = false
-
-func _on_parry_end_timer_timeout():
-	recently_parry_ended = false
-
-# New functions for parry animation and freeze
-func _on_parry_pre_freeze_timeout():
-	# End the parry animation and start time freeze
-	is_in_pre_freeze_parry = false
-	is_in_parry_freeze = true
-	Engine.time_scale = 1  # Slow down time significantly
-	parry_freeze_timer.start()
-
-func _on_parry_freeze_timeout():
-	# End time freeze - player movement will resume immediately with time_scale
-	is_in_parry_freeze = false
-	Engine.time_scale = 1.0
-
-func _on_early_text_timeout():
-	if parry_label:
-		is_fading_early_text = true
-		early_fade_timer.start()
-
-func _on_early_fade_tick():
-	if parry_label and is_fading_early_text:
-		parry_label.modulate.a -= (1.0 / early_fade_duration) * early_fade_timer.wait_time
-		
-		if parry_label.modulate.a <= 0.0:
-			parry_label.visible = false
-			parry_label.text = ""
-			parry_label.modulate.a = 1.0
-			showing_early_text = false
-			is_fading_early_text = false
-			early_fade_timer.stop()
-
-func _on_late_text_timeout():
-	if parry_label:
-		is_fading_late_text = true
-		late_fade_timer.start()
-
-func _on_late_fade_tick():
-	if parry_label and is_fading_late_text:
-		parry_label.modulate.a -= (1.0 / late_fade_duration) * late_fade_timer.wait_time
-		
-		if parry_label.modulate.a <= 0.0:
-			parry_label.visible = false
-			parry_label.text = ""
-			parry_label.modulate.a = 1.0
-			is_fading_late_text = false
-			showing_late_text = false
-			late_fade_timer.stop()
-
 func on_parry_success():
 	parry_was_successful = true
 	add_parry_stack()
-	
-	# Reset flag on successful parry
 	last_attack_was_unparryable = false
-	
-	# CRITICAL CHANGE: End parrying state immediately but keep iframes
 	is_parrying = false
-	can_parry = true  # Allow immediate parrying again
-	
-	# Start the parry animation sequence - set state first, then animation
+	can_parry = true
 	is_in_pre_freeze_parry = true
 	parry_pre_freeze_timer.start()
-	# Use call_deferred to ensure the animation plays after _physics_process
 	call_deferred("_play_parry_animation")
 
 func _play_parry_animation():
 	if is_in_pre_freeze_parry:
 		animated_sprite.play("Parry")
 
+# Movement abilities
+func activate_dash():
+	if not can_dash or is_dashing or current_parry_stacks < 1:
+		return
+	
+	consume_parry_stack()
+	dash_started_on_ground = is_on_floor()
+	was_on_ground_before_dash = dash_started_on_ground
+	dash_start_time = Time.get_ticks_msec() / 1000.0
+	dash_direction = Vector2.LEFT if animated_sprite.flip_h else Vector2.RIGHT
+	is_dashing = true
+	can_dash = false
+	
+	spawn_air_puff()
+	animated_sprite.play("Dash")
+	dash_timer.start()
+	dash_cooldown_timer.start()
+
+func activate_high_jump():
+	if not can_high_jump or current_parry_stacks < 2:
+		return
+	
+	current_parry_stacks -= 2
+	parry_stacks_changed.emit(current_parry_stacks)
+	update_charge_sprites()
+	velocity.y = HIGH_JUMP_VELOCITY
+	can_high_jump = false
+	high_jump_cooldown_timer.start()
+	spawn_air_puffV()
+
+func handle_wall_bounce():
+	var original_dash_direction = dash_direction
+	end_dash()
+	velocity.y = wall_bounce_force.y
+	velocity.x = 0.0
+	bounce_direction_vector = Vector2.LEFT if original_dash_direction.x > 0 else Vector2.RIGHT
+	bounce_timer.start()
+
+func check_dash_ground_landing():
+	if is_on_floor() and not dash_started_on_ground:
+		end_dash()
+	elif dash_started_on_ground and not was_on_ground_before_dash and is_on_floor():
+		end_dash()
+	was_on_ground_before_dash = is_on_floor()
+
+func end_dash():
+	if not is_dashing:
+		return
+	is_dashing = false
+	dash_direction = Vector2.ZERO
+	dash_start_time = 0.0
+	dash_timer.stop()
+
+func end_bounce():
+	is_bouncing = false
+	bounce_direction_vector = Vector2.ZERO
+	bounce_start_time = 0.0
+
+# Charge system
 func add_parry_stack():
 	if current_parry_stacks < max_parry_stacks:
 		current_parry_stacks += 1
@@ -523,7 +444,6 @@ func update_charge_sprites():
 			else:
 				assigned_textures[i] = null
 				assign_empty_texture_to_sprite(i)
-			
 			empty_charge_sprites[i].visible = true
 
 func get_currently_used_textures() -> Array[Texture2D]:
@@ -556,98 +476,104 @@ func assign_empty_texture_to_sprite(index: int):
 		else:
 			empty_charge_sprites[index].modulate.a = 0.3
 
-func activate_dash():
-	if not can_dash or is_dashing:
+# Text display functions
+func show_parry_text(text: String, is_early: bool):
+	if not parry_label:
 		return
+	parry_label.text = text
+	parry_label.visible = true
+	parry_label.modulate.a = 1.0
 	
-	if current_parry_stacks < 1:
-		return
-	
-	current_parry_stacks -= 1
-	parry_stacks_changed.emit(current_parry_stacks)
-	update_charge_sprites()
-	
-	dash_started_on_ground = is_on_floor()
-	was_on_ground_before_dash = dash_started_on_ground
-	dash_start_time = Time.get_ticks_msec() / 1000.0
-	
-	if animated_sprite.flip_h:
-		dash_direction = Vector2.LEFT
+	if is_early:
+		showing_early_text = true
+		is_fading_early_text = false
+		early_text_timer.start()
 	else:
-		dash_direction = Vector2.RIGHT
-	
-	is_dashing = true
-	can_dash = false
-	
-	# Spawn air puff effect at player position
-	spawn_air_puff()
-	
-	# Start dash animation
-	animated_sprite.play("Dash")
-	
-	dash_timer.start()
-	dash_cooldown_timer.start()
+		showing_late_text = true
+		is_fading_late_text = false
+		late_text_timer.start()
 
-func activate_high_jump():
-	if not can_high_jump:
-		return
-	
-	if current_parry_stacks < 2:
-		return
-	
-	current_parry_stacks -= 2
-	parry_stacks_changed.emit(current_parry_stacks)
-	update_charge_sprites()
-	
-	velocity.y = HIGH_JUMP_VELOCITY
-	
-	can_high_jump = false
-	high_jump_cooldown_timer.start()
-	
-	spawn_air_puffV()
-
-func _on_high_jump_cooldown_timeout():
-	can_high_jump = true
-
-func handle_wall_bounce():
-	var original_dash_direction = dash_direction
-	end_dash()
-	
-	velocity.y = wall_bounce_force.y
-	velocity.x = 0.0
-	
-	if original_dash_direction.x > 0:
-		bounce_direction_vector = Vector2.LEFT
-	else:
-		bounce_direction_vector = Vector2.RIGHT
-	
-	bounce_timer.start()
-
-func _on_bounce_timeout():
-	is_bouncing = true
-	bounce_start_time = Time.get_ticks_msec() / 1000.0
-
-func end_bounce():
-	is_bouncing = false
-	bounce_direction_vector = Vector2.ZERO
-	bounce_start_time = 0.0
-
-func check_dash_ground_landing():
-	if is_on_floor() and not dash_started_on_ground:
-		end_dash()
-	elif dash_started_on_ground and not was_on_ground_before_dash and is_on_floor():
-		end_dash()
-	
-	was_on_ground_before_dash = is_on_floor()
-
-func end_dash():
-	if not is_dashing:
+func fade_text(is_early: bool):
+	if not parry_label:
 		return
 		
-	is_dashing = false
-	dash_direction = Vector2.ZERO
-	dash_start_time = 0.0
-	dash_timer.stop()
+	var fade_duration = early_fade_duration if is_early else late_fade_duration
+	var fade_timer = early_fade_timer if is_early else late_fade_timer
+	var fade_amount = (1.0 / fade_duration) * fade_timer.wait_time
+	
+	parry_label.modulate.a -= fade_amount
+	
+	if parry_label.modulate.a <= 0.0:
+		parry_label.visible = false
+		parry_label.text = ""
+		parry_label.modulate.a = 1.0
+		fade_timer.stop()
+		
+		if is_early:
+			showing_early_text = false
+			is_fading_early_text = false
+		else:
+			showing_late_text = false
+			is_fading_late_text = false
+
+# Timer callbacks
+func _on_parry_timeout():
+	health_script.is_invulnerable = false
+	if glint_sprite:
+		glint_sprite.visible = false
+		glint_sprite.stop()
+	if parry_early_timer.time_left > 0:
+		parry_early_timer.stop()
+	recently_parry_ended = true
+	parry_end_timer.start()
+	last_attack_was_unparryable = false
+	if not parry_was_successful:
+		is_parrying = false
+		parry_cooldown_timer.wait_time = parry_fail_cooldown
+		parry_cooldown_timer.start()
+	else:
+		can_parry = true
+
+func _on_parry_early_timeout():
+	if is_parrying and not parry_was_successful and parry_label and not last_attack_was_unparryable:
+		show_parry_text("Late!", false)
+
+func _on_parry_cooldown_timeout():
+	can_parry = true
+
+func _on_damage_timer_timeout():
+	recently_took_damage = false
+
+func _on_parry_end_timer_timeout():
+	recently_parry_ended = false
+
+func _on_parry_pre_freeze_timeout():
+	is_in_pre_freeze_parry = false
+	is_in_parry_freeze = true
+	Engine.time_scale = 1
+	parry_freeze_timer.start()
+
+func _on_parry_freeze_timeout():
+	is_in_parry_freeze = false
+	Engine.time_scale = 1.0
+
+func _on_early_text_timeout():
+	if parry_label:
+		is_fading_early_text = true
+		early_fade_timer.start()
+
+func _on_early_fade_tick():
+	if parry_label and is_fading_early_text:
+		fade_text(true)
+
+func _on_late_text_timeout():
+	if parry_label:
+		is_fading_late_text = true
+		late_fade_timer.start()
+
+func _on_late_fade_tick():
+	if parry_label and is_fading_late_text:
+		fade_text(false)
 
 func _on_dash_timeout():
 	end_dash()
@@ -655,40 +581,35 @@ func _on_dash_timeout():
 func _on_dash_cooldown_timeout():
 	can_dash = true
 
-# CHANGED: This function now responds to health_decreased instead of damage_taken
+func _on_bounce_timeout():
+	is_bouncing = true
+	bounce_start_time = Time.get_ticks_msec() / 1000.0
+
+func _on_high_jump_cooldown_timeout():
+	can_high_jump = true
+
 func _on_health_decreased():
 	recently_took_damage = true
 	damage_timer.start()
 	
-	# Check if this should show "Early!" text
 	if recently_parry_ended and parry_label and not last_attack_was_unparryable:
-		parry_label.text = "Early!"
-		parry_label.visible = true
-		parry_label.modulate.a = 1.0
-		showing_early_text = true
-		is_fading_early_text = false
-		early_text_timer.start()
+		show_parry_text("Early!", true)
 		recently_parry_ended = false
 
 func set_last_attack_unparryable(unparryable: bool):
 	last_attack_was_unparryable = unparryable
 
 func _on_player_died():
-	# Remove is_flickering = false and flicker_timer.stop()
 	is_parrying = false
 	is_dashing = false
 	is_bouncing = false
 	is_in_parry_freeze = false
 	is_in_pre_freeze_parry = false
-	parry_timer.stop()
-	parry_cooldown_timer.stop()
-	parry_freeze_timer.stop()
-	parry_pre_freeze_timer.stop()
-	dash_timer.stop()
-	dash_cooldown_timer.stop()
-	bounce_timer.stop()
-	animated_sprite.modulate.a = 1.0  # Keep this to reset sprite
-	pending_bounce_direction = 0.0
+	
+	for timer in [parry_timer, parry_cooldown_timer, parry_freeze_timer, parry_pre_freeze_timer, dash_timer, dash_cooldown_timer, bounce_timer]:
+		timer.stop()
+	
+	animated_sprite.modulate.a = 1.0
 	bounce_direction_vector = Vector2.ZERO
 	
 	if glint_sprite:
@@ -696,16 +617,13 @@ func _on_player_died():
 		glint_sprite.stop()
 	
 	reset_parry_stacks()
-	
 	Engine.time_scale = 0.2
 	$CollisionShape2D.set_deferred("disabled", true)
 	
 	await get_tree().create_timer(1.0).timeout
-	
 	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()
-	
-	
+
 func grab_vine(vine: Vine):
 	print("Player grab_vine method called")
 	if vine.player_in_grab_area and has_node("VineComponent"):

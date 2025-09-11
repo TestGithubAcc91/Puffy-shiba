@@ -27,6 +27,21 @@ class_name VineComponent
 # NEW: Minimum velocity threshold to allow swinging when directly under vine
 @export var min_velocity_for_under_vine_swing: float = 50.0
 
+@export_group("Vine Return Animation")
+@export var vine_return_damping: float = 0.95
+@export var vine_return_gravity_multiplier: float = 0.8
+@export var vine_return_stop_threshold: float = 0.05  # Stop animating when angle is very small
+
+
+@export_group("Momentum System")
+@export var momentum_force_multiplier: float = 2.0  # How strong the initial momentum force is
+@export var momentum_decay_rate: float = 3.0  # How quickly momentum decays (higher = faster decay)
+@export var min_momentum_threshold: float = 10.0  # Minimum force before momentum stops applying
+
+var momentum_force: Vector2 = Vector2.ZERO
+var is_applying_momentum: bool = false
+
+
 var current_vine: Vine = null
 var is_swinging: bool = false
 var player: CharacterBody2D
@@ -44,6 +59,10 @@ var inputs_blocked: bool = false
 var blocked_direction: int = 0
 var last_swing_direction: int = 0
 
+# NEW: Variables for vine return animation
+var vine_returning_to_rest: bool = false
+var return_vine: Vine = null
+
 func _ready():
 	player = get_parent() as CharacterBody2D
 	max_swing_angle_radians = deg_to_rad(max_swing_angle_degrees)
@@ -56,8 +75,16 @@ func _physics_process(delta):
 			is_grounded = true
 			if recently_released_vine:
 				recently_released_vine = null
+		# Stop momentum when player lands
+		if is_applying_momentum:
+			is_applying_momentum = false
+			momentum_force = Vector2.ZERO
 	else:
 		is_grounded = false
+	
+	# NEW: Apply momentum force gradually
+	if is_applying_momentum and player:
+		apply_momentum_force(delta)
 	
 	if Input.is_action_just_pressed("Jump") and is_swinging:
 		release_vine()
@@ -73,9 +100,33 @@ func _physics_process(delta):
 	
 	if is_swinging and current_vine:
 		handle_vine_swinging(delta)
+	
+	# Handle vine return animation
+	if vine_returning_to_rest and return_vine:
+		handle_vine_return_animation(delta)
 
 func set_nearby_vine(vine: Vine):
 	nearby_vine = vine
+
+
+# NEW: Apply momentum force function
+func apply_momentum_force(delta: float):
+	if not player or not is_applying_momentum:
+		return
+	
+	# Apply current momentum force to player
+	var force_to_apply = momentum_force * delta
+	player.velocity.x += force_to_apply.x
+	
+	# Decay the momentum force over time
+	momentum_force = momentum_force.move_toward(Vector2.ZERO, momentum_force.length() * momentum_decay_rate * delta)
+	
+	# Stop applying momentum when force becomes too small
+	if momentum_force.length() < min_momentum_threshold:
+		is_applying_momentum = false
+		momentum_force = Vector2.ZERO
+		print("Momentum force ended")
+
 
 func clear_nearby_vine(vine: Vine):
 	if nearby_vine == vine:
@@ -155,6 +206,16 @@ func determine_initial_swing_direction(vine: Vine) -> float:
 	return sign(player_relative_x) if abs(player_relative_x) > 5.0 else 1.0
 
 func grab_vine(vine: Vine):
+	# Stop any momentum when grabbing a new vine
+	is_applying_momentum = false
+	momentum_force = Vector2.ZERO
+	
+
+	# Stop any ongoing vine return animation if we're grabbing the same vine
+	if vine_returning_to_rest and return_vine == vine:
+		vine_returning_to_rest = false
+		return_vine = null
+	
 	current_vine = vine
 	is_swinging = true
 	var approach_time = vine.get_approach_time()
@@ -209,17 +270,70 @@ func grab_vine(vine: Vine):
 func release_vine():
 	if current_vine:
 		recently_released_vine = current_vine
+		
+		# Calculate momentum
+		var vine_anchor = current_vine.vine_anchor
+		var effective_vine_length = current_grab_distance
+		
+		var tangent_direction = Vector2(-cos(swing_angle), sin(swing_angle))
+		var swing_velocity = tangent_direction * swing_angular_velocity * effective_vine_length
+		
+		var base_horizontal_momentum = swing_velocity.x * release_boost
+		
+		var min_momentum = 100.0
+		if abs(base_horizontal_momentum) < min_momentum and abs(swing_angular_velocity) > 0.1:
+			base_horizontal_momentum = sign(swing_angular_velocity) * min_momentum * release_boost
+		
+		base_horizontal_momentum *= 2.0
+		
+		# Apply momentum to player instead of handling it in VineComponent
+		if player and player.has_method("apply_external_momentum"):
+			player.apply_external_momentum(Vector2(base_horizontal_momentum, 0.0))
+		
+		# Give small immediate velocity
+		player.velocity.x += base_horizontal_momentum * 0.1  # Just 10% immediate
+		if player.velocity.y > -50.0:
+			player.velocity.y = -50.0
+		
+		print("Releasing vine - Applied momentum: ", base_horizontal_momentum)
+		
+		# Clean up vine stuff
+		vine_returning_to_rest = true
+		return_vine = current_vine
+		
 		current_vine.release_player()
 		current_vine = null
 		is_swinging = false
-		swing_angle = 0.0
-		swing_angular_velocity = 0.0
 		current_grab_distance = 0.0
 		time_at_limit = 0.0
 		inputs_blocked = false
 		blocked_direction = 0
 		last_swing_direction = 0
-		player.velocity = Vector2.ZERO
+
+# NEW: Handle vine return to rest animation
+func handle_vine_return_animation(delta):
+	if not return_vine:
+		vine_returning_to_rest = false
+		return
+	
+	var effective_vine_length = return_vine.vine_length
+	var gravity_magnitude = player.get_gravity().y if player else 980.0
+	var pendulum_acceleration = -(gravity_magnitude * vine_return_gravity_multiplier / effective_vine_length) * sin(swing_angle)
+	
+	swing_angular_velocity += pendulum_acceleration * delta
+	swing_angular_velocity *= vine_return_damping
+	
+	swing_angle += swing_angular_velocity * delta
+	
+	# Stop the animation when the vine is close to rest position and moving slowly
+	if abs(swing_angle) < vine_return_stop_threshold and abs(swing_angular_velocity) < 0.1:
+		swing_angle = 0.0
+		swing_angular_velocity = 0.0
+		vine_returning_to_rest = false
+		# NEW: Clear the vine component reference from the vine
+		if return_vine:
+			return_vine.clear_vine_component_ref()
+		return_vine = null
 
 func handle_vine_swinging(delta):
 	if not current_vine:
