@@ -629,3 +629,9 @@ func grab_vine(vine: Vine):
 	if vine.player_in_grab_area and has_node("VineComponent"):
 		print("Player attempting to grab vine through VineComponent")
 		$VineComponent.grab_vine(vine)
+		
+		
+func set_momentum_parameters(new_decay_rate: float, new_threshold: float):
+	momentum_decay_rate = new_decay_rate
+	min_momentum_threshold = new_threshold
+	print("Updated momentum parameters - Decay Rate: ", new_decay_rate, " Threshold: ", new_threshold)

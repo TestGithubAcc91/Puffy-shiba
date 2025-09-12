@@ -228,3 +228,5 @@ text = "Late!"
 [node name="VineComponent" type="Node" parent="."]
 script = ExtResource("13_ukyrk")
 swing_speed = 100.0
+momentum_decay_rate = 5.0
+min_momentum_threshold = 20.0

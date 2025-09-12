@@ -275,27 +275,61 @@ func release_vine():
 		var vine_anchor = current_vine.vine_anchor
 		var effective_vine_length = current_grab_distance
 		
-		var tangent_direction = Vector2(-cos(swing_angle), sin(swing_angle))
+		# FIXED: Corrected tangent direction calculation
+		var tangent_direction = Vector2(cos(swing_angle), -sin(swing_angle))
 		var swing_velocity = tangent_direction * swing_angular_velocity * effective_vine_length
 		
-		var base_horizontal_momentum = swing_velocity.x * release_boost
+		# Get current player input to determine release direction
+		var horizontal_input = Input.get_axis("Move_Left", "Move_Right")
+		var base_horizontal_momentum = 0.0
 		
-		var min_momentum = 100.0
-		if abs(base_horizontal_momentum) < min_momentum and abs(swing_angular_velocity) > 0.1:
-			base_horizontal_momentum = sign(swing_angular_velocity) * min_momentum * release_boost
+		# If player is giving directional input, prioritize that direction
+		if abs(horizontal_input) > 0.1:  # Small threshold to avoid tiny inputs
+			var input_direction = sign(horizontal_input)
+			
+			# Base momentum from input direction
+			base_horizontal_momentum = input_direction * 150.0 * release_boost
+			
+			# Add swing velocity bonus if it's in the same direction
+			var swing_horizontal_velocity = swing_velocity.x
+			if sign(swing_horizontal_velocity) == input_direction:
+				# Swing helps the input direction - add bonus
+				base_horizontal_momentum += abs(swing_horizontal_velocity) * 0.5 * release_boost
+			
+		else:
+			# No input - use swing momentum, but ensure it makes intuitive sense
+			base_horizontal_momentum = swing_velocity.x * release_boost
+			
+			# Ensure minimum momentum based on swing direction
+			var min_momentum = 100.0
+			if abs(base_horizontal_momentum) < min_momentum and abs(swing_angular_velocity) > 0.1:
+				# FIXED: Use the swing direction directly (positive angular velocity = swinging right)
+				var swing_direction = sign(swing_angular_velocity)
+				base_horizontal_momentum = swing_direction * min_momentum * release_boost
 		
 		base_horizontal_momentum *= 2.0
 		
-		# Apply momentum to player instead of handling it in VineComponent
+		# Apply momentum to player using the existing player momentum system
+		# Use VineComponent's momentum settings by passing them to the player
 		if player and player.has_method("apply_external_momentum"):
-			player.apply_external_momentum(Vector2(base_horizontal_momentum, 0.0))
+			# Scale the momentum by the VineComponent's multiplier
+			var scaled_momentum = Vector2(base_horizontal_momentum * momentum_force_multiplier, 0.0)
+			player.apply_external_momentum(scaled_momentum)
+			
+			# Also update the player's momentum decay settings to use VineComponent values
+			if player.has_method("set_momentum_parameters"):
+				player.set_momentum_parameters(momentum_decay_rate, min_momentum_threshold)
+			else:
+				# Fallback: directly set the player's momentum variables if accessible
+				player.momentum_decay_rate = momentum_decay_rate
+				player.min_momentum_threshold = min_momentum_threshold
 		
-		# Give small immediate velocity
-		player.velocity.x += base_horizontal_momentum * 0.1  # Just 10% immediate
+		# Give small immediate velocity boost
+		player.velocity.x += base_horizontal_momentum * 0.05  # Small immediate boost
 		if player.velocity.y > -50.0:
 			player.velocity.y = -50.0
 		
-		print("Releasing vine - Applied momentum: ", base_horizontal_momentum)
+		print("Releasing vine - Applied momentum: ", base_horizontal_momentum, " Input: ", horizontal_input)
 		
 		# Clean up vine stuff
 		vine_returning_to_rest = true
@@ -309,8 +343,9 @@ func release_vine():
 		inputs_blocked = false
 		blocked_direction = 0
 		last_swing_direction = 0
-
-# NEW: Handle vine return to rest animation
+		
+		
+		
 func handle_vine_return_animation(delta):
 	if not return_vine:
 		vine_returning_to_rest = false
