@@ -96,9 +96,8 @@ var bounce_start_time: float = 0.0
 var bounce_duration: float = 0.0
 var bounce_direction_vector: Vector2 = Vector2.ZERO
 
-var external_momentum: Vector2 = Vector2.ZERO
-var momentum_decay_rate: float = 2.0
-var min_momentum_threshold: float = 20.0
+# NEW: Variable to track if this is a vine release dash
+var is_vine_release_dash: bool = false
 
 func _ready():
 	health_script.died.connect(_on_player_died)
@@ -173,17 +172,25 @@ func handle_movement(delta: float):
 		handle_normal_movement(delta)
 
 func handle_dash_movement(delta: float):
+	# Set horizontal velocity for both regular and vine release dashes
 	velocity.x = dash_direction.x * (dash_distance / dash_duration)
 	
 	var current_time = Time.get_ticks_msec() / 1000.0
 	var dash_elapsed = current_time - dash_start_time
 	var dash_progress = dash_elapsed / dash_duration
 	
-	if dash_progress < 0.5:
-		velocity.y = 0.0
-	else:
+	# Different vertical movement handling for vine release vs regular dash
+	if is_vine_release_dash:
+		# Vine release dash: Allow natural gravity throughout the dash
 		if not is_on_floor():
 			velocity += get_gravity() * delta
+	else:
+		# Regular dash: Lock Y velocity for first half, then allow gravity
+		if dash_progress < 0.5:
+			velocity.y = 0.0
+		else:
+			if not is_on_floor():
+				velocity += get_gravity() * delta
 	
 	move_and_slide()
 	
@@ -215,44 +222,13 @@ func handle_normal_movement(delta: float):
 	update_sprite_direction(direction)
 	update_animations(direction)
 	
-	# Apply external momentum (like from vine swinging)
-	if external_momentum.length() > min_momentum_threshold:
-		# Apply momentum to velocity
-		velocity.x += external_momentum.x * delta
-		
-		# Decay momentum over time
-		external_momentum = external_momentum.move_toward(Vector2.ZERO, external_momentum.length() * momentum_decay_rate * delta)
-		
-		# If player is giving input, reduce momentum faster in opposite direction
-		if direction != 0.0:
-			var input_opposes_momentum = (direction > 0 and external_momentum.x < 0) or (direction < 0 and external_momentum.x > 0)
-			if input_opposes_momentum:
-				external_momentum.x = move_toward(external_momentum.x, 0.0, abs(external_momentum.x) * momentum_decay_rate * 2.0 * delta)
-	else:
-		external_momentum = Vector2.ZERO
-	
-	# Handle normal movement input
+	# Simple movement - no momentum system
 	if direction:
-		# If there's input, blend with momentum or override it
-		if external_momentum.length() > min_momentum_threshold:
-			# Blend input with momentum
-			var input_velocity = direction * SPEED
-			var momentum_influence = clamp(external_momentum.length() / 200.0, 0.0, 1.0)
-			velocity.x = lerp(input_velocity, velocity.x, momentum_influence * 0.3)
-		else:
-			velocity.x = direction * SPEED
+		velocity.x = direction * SPEED
 	else:
-		# No input - let momentum carry the player, but add air resistance
-		if external_momentum.length() <= min_momentum_threshold:
-			# No significant momentum, apply normal deceleration
-			velocity.x = move_toward(velocity.x, 0, SPEED * 0.5)  # Reduced deceleration to preserve some momentum
+		velocity.x = move_toward(velocity.x, 0, SPEED * 0.3)
 	
 	move_and_slide()
-	
-	
-func apply_external_momentum(momentum: Vector2):
-	external_momentum = momentum
-	print("Player received momentum: ", momentum)
 
 func get_effective_horizontal_input() -> float:
 	if vine_component and vine_component.is_swinging and vine_component.inputs_blocked:
@@ -357,6 +333,7 @@ func activate_dash():
 	dash_direction = Vector2.LEFT if animated_sprite.flip_h else Vector2.RIGHT
 	is_dashing = true
 	can_dash = false
+	is_vine_release_dash = false  # Regular dashes are NOT vine release dashes
 	
 	spawn_air_puff()
 	animated_sprite.play("Dash")
@@ -396,6 +373,7 @@ func end_dash():
 	is_dashing = false
 	dash_direction = Vector2.ZERO
 	dash_start_time = 0.0
+	is_vine_release_dash = false  # Reset vine release dash flag
 	dash_timer.stop()
 
 func end_bounce():
@@ -605,6 +583,7 @@ func _on_player_died():
 	is_bouncing = false
 	is_in_parry_freeze = false
 	is_in_pre_freeze_parry = false
+	is_vine_release_dash = false  # Reset vine release dash flag
 	
 	for timer in [parry_timer, parry_cooldown_timer, parry_freeze_timer, parry_pre_freeze_timer, dash_timer, dash_cooldown_timer, bounce_timer]:
 		timer.stop()
@@ -629,9 +608,3 @@ func grab_vine(vine: Vine):
 	if vine.player_in_grab_area and has_node("VineComponent"):
 		print("Player attempting to grab vine through VineComponent")
 		$VineComponent.grab_vine(vine)
-		
-		
-func set_momentum_parameters(new_decay_rate: float, new_threshold: float):
-	momentum_decay_rate = new_decay_rate
-	min_momentum_threshold = new_threshold
-	print("Updated momentum parameters - Decay Rate: ", new_decay_rate, " Threshold: ", new_threshold)

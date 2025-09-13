@@ -2,7 +2,6 @@ extends Node
 class_name VineComponent
 
 @export var swing_speed: float = 400.0
-@export var release_boost: float = 1.5
 @export var max_swing_velocity: float = 600.0
 @export var gravity_multiplier_while_swinging: float = 0.3
 @export var max_swing_angle_degrees: float = 70.0
@@ -24,23 +23,17 @@ class_name VineComponent
 @export var player_velocity_boost_multiplier: float = 0.8
 @export var approach_direction_boost_multiplier: float = 1.2
 
-# NEW: Minimum velocity threshold to allow swinging when directly under vine
+# Minimum velocity threshold to allow swinging when directly under vine
 @export var min_velocity_for_under_vine_swing: float = 50.0
 
 @export_group("Vine Return Animation")
 @export var vine_return_damping: float = 0.95
 @export var vine_return_gravity_multiplier: float = 0.8
-@export var vine_return_stop_threshold: float = 0.05  # Stop animating when angle is very small
+@export var vine_return_stop_threshold: float = 0.05
 
-
-@export_group("Momentum System")
-@export var momentum_force_multiplier: float = 2.0  # How strong the initial momentum force is
-@export var momentum_decay_rate: float = 3.0  # How quickly momentum decays (higher = faster decay)
-@export var min_momentum_threshold: float = 10.0  # Minimum force before momentum stops applying
-
-var momentum_force: Vector2 = Vector2.ZERO
-var is_applying_momentum: bool = false
-
+@export_group("Vine Release Dash")
+@export var vine_release_dash_enabled: bool = true
+@export var vine_release_dash_force_multiplier: float = 1.0
 
 var current_vine: Vine = null
 var is_swinging: bool = false
@@ -59,7 +52,7 @@ var inputs_blocked: bool = false
 var blocked_direction: int = 0
 var last_swing_direction: int = 0
 
-# NEW: Variables for vine return animation
+# Variables for vine return animation
 var vine_returning_to_rest: bool = false
 var return_vine: Vine = null
 
@@ -75,16 +68,8 @@ func _physics_process(delta):
 			is_grounded = true
 			if recently_released_vine:
 				recently_released_vine = null
-		# Stop momentum when player lands
-		if is_applying_momentum:
-			is_applying_momentum = false
-			momentum_force = Vector2.ZERO
 	else:
 		is_grounded = false
-	
-	# NEW: Apply momentum force gradually
-	if is_applying_momentum and player:
-		apply_momentum_force(delta)
 	
 	if Input.is_action_just_pressed("Jump") and is_swinging:
 		release_vine()
@@ -108,26 +93,6 @@ func _physics_process(delta):
 func set_nearby_vine(vine: Vine):
 	nearby_vine = vine
 
-
-# NEW: Apply momentum force function
-func apply_momentum_force(delta: float):
-	if not player or not is_applying_momentum:
-		return
-	
-	# Apply current momentum force to player
-	var force_to_apply = momentum_force * delta
-	player.velocity.x += force_to_apply.x
-	
-	# Decay the momentum force over time
-	momentum_force = momentum_force.move_toward(Vector2.ZERO, momentum_force.length() * momentum_decay_rate * delta)
-	
-	# Stop applying momentum when force becomes too small
-	if momentum_force.length() < min_momentum_threshold:
-		is_applying_momentum = false
-		momentum_force = Vector2.ZERO
-		print("Momentum force ended")
-
-
 func clear_nearby_vine(vine: Vine):
 	if nearby_vine == vine:
 		nearby_vine = null
@@ -137,12 +102,10 @@ func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
 	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
 	
-	# MODIFIED: Check if player has sufficient velocity when directly under vine
+	# Check if player has sufficient velocity when directly under vine
 	if is_directly_under_vine:
 		var player_speed = player.velocity.length()
-		# If player is moving fast enough, allow some boost; otherwise return 0
 		if player_speed >= min_velocity_for_under_vine_swing:
-			# Scale the boost based on player velocity, but keep it lower than side approaches
 			var velocity_factor = clamp(player_speed / 200.0, 0.2, 0.6)
 			total_boost *= velocity_factor
 		else:
@@ -169,7 +132,6 @@ func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 		if dot_product > 0.0 and not is_directly_under_vine:
 			velocity_boost *= approach_direction_boost_multiplier * dot_product
 		elif is_directly_under_vine:
-			# MODIFIED: For under vine, use horizontal velocity component
 			var horizontal_velocity = Vector2(player.velocity.x, 0.0).length()
 			velocity_boost = horizontal_velocity * player_velocity_boost_multiplier * 0.5
 		
@@ -181,19 +143,15 @@ func determine_initial_swing_direction(vine: Vine) -> float:
 	if not player:
 		return 1.0
 	
-	# Check if player is directly under the vine
 	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
 	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
 	
-	# MODIFIED: If directly under vine, use player's horizontal velocity to determine direction
 	if is_directly_under_vine:
 		var player_speed = player.velocity.length()
-		# Only apply direction if player is moving fast enough
 		if player_speed >= min_velocity_for_under_vine_swing:
 			var horizontal_velocity = player.velocity.x
-			# Use horizontal velocity direction, but make it less aggressive
-			if abs(horizontal_velocity) > 10.0:  # Minimum horizontal movement threshold
-				return sign(horizontal_velocity) * 0.7  # Reduced multiplier for under-vine swings
+			if abs(horizontal_velocity) > 10.0:
+				return sign(horizontal_velocity) * 0.7
 		return 0.0
 	
 	var velocity_direction = player.velocity.normalized()
@@ -206,11 +164,6 @@ func determine_initial_swing_direction(vine: Vine) -> float:
 	return sign(player_relative_x) if abs(player_relative_x) > 5.0 else 1.0
 
 func grab_vine(vine: Vine):
-	# Stop any momentum when grabbing a new vine
-	is_applying_momentum = false
-	momentum_force = Vector2.ZERO
-	
-
 	# Stop any ongoing vine return animation if we're grabbing the same vine
 	if vine_returning_to_rest and return_vine == vine:
 		vine_returning_to_rest = false
@@ -237,26 +190,20 @@ func grab_vine(vine: Vine):
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
-	# MODIFIED: Use approach timer to determine swing behavior
 	var player_speed = player.velocity.length()
 	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
 	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
-	
-	# Check if this is a short approach (accidental contact) or intentional swinging
 	var is_short_approach = approach_time < min_approach_time_for_boost
 	
 	if is_directly_under_vine and player_speed < min_velocity_for_under_vine_swing:
-		# Player is directly under vine and moving slowly - no initial swing
 		swing_angular_velocity = 0.0
-		swing_angle = 0.0  # Force straight down position
-		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)  # Position directly below
+		swing_angle = 0.0
+		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)
 	elif is_short_approach and not is_directly_under_vine:
-		# Player approached from side but didn't build up enough approach time - minimal swing
 		swing_angular_velocity = 0.0
-		swing_angle = 0.0  # Force straight down position  
-		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)  # Position directly below
+		swing_angle = 0.0
+		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)
 	else:
-		# Player has sufficient approach time or velocity - normal grab behavior
 		var initial_boost = calculate_initial_speed_boost(vine, approach_time)
 		var swing_direction = determine_initial_swing_direction(vine)
 		swing_angular_velocity = (initial_boost / current_grab_distance) * swing_direction
@@ -271,65 +218,28 @@ func release_vine():
 	if current_vine:
 		recently_released_vine = current_vine
 		
-		# Calculate momentum
-		var vine_anchor = current_vine.vine_anchor
-		var effective_vine_length = current_grab_distance
+		# Apply jump velocity
+		player.velocity.y = player.JUMP_VELOCITY
 		
-		# FIXED: Corrected tangent direction calculation
-		var tangent_direction = Vector2(cos(swing_angle), -sin(swing_angle))
-		var swing_velocity = tangent_direction * swing_angular_velocity * effective_vine_length
+		# Determine dash direction based on swing momentum and player input
+		var dash_direction = Vector2.ZERO
 		
-		# Get current player input to determine release direction
-		var horizontal_input = Input.get_axis("Move_Left", "Move_Right")
-		var base_horizontal_momentum = 0.0
-		
-		# If player is giving directional input, prioritize that direction
-		if abs(horizontal_input) > 0.1:  # Small threshold to avoid tiny inputs
-			var input_direction = sign(horizontal_input)
-			
-			# Base momentum from input direction
-			base_horizontal_momentum = input_direction * 150.0 * release_boost
-			
-			# Add swing velocity bonus if it's in the same direction
-			var swing_horizontal_velocity = swing_velocity.x
-			if sign(swing_horizontal_velocity) == input_direction:
-				# Swing helps the input direction - add bonus
-				base_horizontal_momentum += abs(swing_horizontal_velocity) * 0.5 * release_boost
-			
-		else:
-			# No input - use swing momentum, but ensure it makes intuitive sense
-			base_horizontal_momentum = swing_velocity.x * release_boost
-			
-			# Ensure minimum momentum based on swing direction
-			var min_momentum = 100.0
-			if abs(base_horizontal_momentum) < min_momentum and abs(swing_angular_velocity) > 0.1:
-				# FIXED: Use the swing direction directly (positive angular velocity = swinging right)
-				var swing_direction = sign(swing_angular_velocity)
-				base_horizontal_momentum = swing_direction * min_momentum * release_boost
-		
-		base_horizontal_momentum *= 2.0
-		
-		# Apply momentum to player using the existing player momentum system
-		# Use VineComponent's momentum settings by passing them to the player
-		if player and player.has_method("apply_external_momentum"):
-			# Scale the momentum by the VineComponent's multiplier
-			var scaled_momentum = Vector2(base_horizontal_momentum * momentum_force_multiplier, 0.0)
-			player.apply_external_momentum(scaled_momentum)
-			
-			# Also update the player's momentum decay settings to use VineComponent values
-			if player.has_method("set_momentum_parameters"):
-				player.set_momentum_parameters(momentum_decay_rate, min_momentum_threshold)
+		# Check if vine release dash is enabled - NO parry stack requirement!
+		if vine_release_dash_enabled:
+			# Priority 1: Current input direction
+			var input_direction = Input.get_axis("Move_Left", "Move_Right")
+			if abs(input_direction) > 0.1:
+				dash_direction = Vector2.LEFT if input_direction < 0 else Vector2.RIGHT
+			# Priority 2: Swing momentum direction
+			elif abs(swing_angular_velocity) > 0.1:
+				dash_direction = Vector2.LEFT if swing_angular_velocity < 0 else Vector2.RIGHT
+			# Priority 3: Player sprite facing direction
 			else:
-				# Fallback: directly set the player's momentum variables if accessible
-				player.momentum_decay_rate = momentum_decay_rate
-				player.min_momentum_threshold = min_momentum_threshold
-		
-		# Give small immediate velocity boost
-		player.velocity.x += base_horizontal_momentum * 0.05  # Small immediate boost
-		if player.velocity.y > -50.0:
-			player.velocity.y = -50.0
-		
-		print("Releasing vine - Applied momentum: ", base_horizontal_momentum, " Input: ", horizontal_input)
+				dash_direction = Vector2.LEFT if player.animated_sprite.flip_h else Vector2.RIGHT
+			
+			# Trigger the dash using the player's existing dash system
+			if dash_direction != Vector2.ZERO:
+				trigger_vine_release_dash(dash_direction)
 		
 		# Clean up vine stuff
 		vine_returning_to_rest = true
@@ -343,9 +253,52 @@ func release_vine():
 		inputs_blocked = false
 		blocked_direction = 0
 		last_swing_direction = 0
-		
-		
-		
+
+func trigger_vine_release_dash(direction: Vector2):
+	# Vine release dash bypasses ALL normal dash restrictions - no parry stack requirement!
+	if player.is_dashing:
+		return
+	
+	# Force the dash to work regardless of player's dash state
+	var original_can_dash = player.can_dash
+	var original_stacks = player.current_parry_stacks
+	
+	# Set up dash variables (using player's existing dash mechanics)
+	player.dash_started_on_ground = false  # We're in the air from vine release
+	player.was_on_ground_before_dash = false
+	player.dash_start_time = Time.get_ticks_msec() / 1000.0
+	player.dash_direction = direction * vine_release_dash_force_multiplier
+	player.is_dashing = true
+	player.can_dash = false
+	
+	# Mark this as a vine release dash to allow vertical movement
+	player.is_vine_release_dash = true
+	
+	# Don't modify parry stacks at all - vine release dash is free!
+	
+	# Visual effects and animation
+	player.spawn_air_puff()
+	player.animated_sprite.play("Dash")
+	
+	# Start dash timer but handle cooldown based on original state
+	player.dash_timer.start()
+	if original_can_dash:
+		# If player could dash before, don't put it on cooldown
+		player.can_dash = true
+	else:
+		# If player couldn't dash before, start the cooldown
+		player.dash_cooldown_timer.start()
+	
+	# Update sprite direction to match dash direction
+	if direction.x < 0:
+		player.animated_sprite.flip_h = true
+		if player.glint_sprite:
+			player.glint_sprite.position.x = abs(player.glint_sprite.position.x)
+	else:
+		player.animated_sprite.flip_h = false
+		if player.glint_sprite:
+			player.glint_sprite.position.x = abs(player.glint_sprite.position.x) * -1
+
 func handle_vine_return_animation(delta):
 	if not return_vine:
 		vine_returning_to_rest = false
@@ -360,12 +313,10 @@ func handle_vine_return_animation(delta):
 	
 	swing_angle += swing_angular_velocity * delta
 	
-	# Stop the animation when the vine is close to rest position and moving slowly
 	if abs(swing_angle) < vine_return_stop_threshold and abs(swing_angular_velocity) < 0.1:
 		swing_angle = 0.0
 		swing_angular_velocity = 0.0
 		vine_returning_to_rest = false
-		# NEW: Clear the vine component reference from the vine
 		if return_vine:
 			return_vine.clear_vine_component_ref()
 		return_vine = null
@@ -450,9 +401,6 @@ func handle_vine_swinging(delta):
 	
 	var tangent_direction = Vector2(-cos(swing_angle), sin(swing_angle))
 	player.velocity = tangent_direction * swing_angular_velocity * effective_vine_length
-	
-	if Input.is_action_just_pressed("Jump"):
-		release_vine()
 
 func check_input_blocking():
 	var abs_angle = abs(swing_angle)
