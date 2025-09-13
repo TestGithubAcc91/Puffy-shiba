@@ -26,6 +26,11 @@ class_name VineComponent
 # Minimum velocity threshold to allow swinging when directly under vine
 @export var min_velocity_for_under_vine_swing: float = 50.0
 
+@export_group("Vine Visual Adjustment")
+# NEW: Adjustment factor to account for vine bending
+@export var vine_bend_compensation: float = 0.92  # Reduces effective swing radius
+@export var player_position_smoothing: float = 0.1  # Smooths player position adjustments
+
 @export_group("Vine Return Animation")
 @export var vine_return_damping: float = 0.95
 @export var vine_return_gravity_multiplier: float = 0.8
@@ -55,6 +60,9 @@ var last_swing_direction: int = 0
 # Variables for vine return animation
 var vine_returning_to_rest: bool = false
 var return_vine: Vine = null
+
+# NEW: Adjusted swing radius for visual consistency
+var visual_swing_radius: float = 0.0
 
 func _ready():
 	player = get_parent() as CharacterBody2D
@@ -178,9 +186,13 @@ func grab_vine(vine: Vine):
 	last_swing_direction = 0
 	current_grab_distance = vine.vine_length + 5.0
 	
+	# NEW: Calculate visual swing radius with bend compensation
+	visual_swing_radius = current_grab_distance * vine_bend_compensation
+	
 	var to_player = player.global_position - vine.vine_anchor
 	var direction = to_player.normalized()
-	player.global_position = vine.vine_anchor + direction * current_grab_distance
+	# NEW: Position player using visual swing radius
+	player.global_position = vine.vine_anchor + direction * visual_swing_radius
 	
 	to_player = player.global_position - vine.vine_anchor
 	swing_angle = atan2(to_player.x, to_player.y)
@@ -198,17 +210,18 @@ func grab_vine(vine: Vine):
 	if is_directly_under_vine and player_speed < min_velocity_for_under_vine_swing:
 		swing_angular_velocity = 0.0
 		swing_angle = 0.0
-		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)
+		player.global_position = vine.vine_anchor + Vector2(0, visual_swing_radius)
 	elif is_short_approach and not is_directly_under_vine:
 		swing_angular_velocity = 0.0
 		swing_angle = 0.0
-		player.global_position = vine.vine_anchor + Vector2(0, current_grab_distance)
+		player.global_position = vine.vine_anchor + Vector2(0, visual_swing_radius)
 	else:
 		var initial_boost = calculate_initial_speed_boost(vine, approach_time)
 		var swing_direction = determine_initial_swing_direction(vine)
-		swing_angular_velocity = (initial_boost / current_grab_distance) * swing_direction
+		# NEW: Use visual swing radius for angular velocity calculation
+		swing_angular_velocity = (initial_boost / visual_swing_radius) * swing_direction
 		
-		var max_initial_angular_velocity = (max_swing_velocity * 1.2) / current_grab_distance
+		var max_initial_angular_velocity = (max_swing_velocity * 1.2) / visual_swing_radius
 		swing_angular_velocity = clamp(swing_angular_velocity, -max_initial_angular_velocity, max_initial_angular_velocity)
 	
 	time_at_limit = 0.0
@@ -238,6 +251,7 @@ func release_vine():
 		current_vine = null
 		is_swinging = false
 		current_grab_distance = 0.0
+		visual_swing_radius = 0.0  # NEW: Reset visual radius
 		time_at_limit = 0.0
 		inputs_blocked = false
 		blocked_direction = 0
@@ -315,7 +329,8 @@ func handle_vine_swinging(delta):
 		return
 	
 	var vine_anchor = current_vine.vine_anchor
-	var effective_vine_length = current_grab_distance
+	# NEW: Use visual swing radius instead of grab distance
+	var effective_vine_length = visual_swing_radius
 	var gravity_magnitude = player.get_gravity().y
 	var pendulum_acceleration = -(gravity_magnitude * gravity_multiplier_while_swinging / effective_vine_length) * sin(swing_angle)
 	var additional_restoration = -(pendulum_restore_force / effective_vine_length) * sin(swing_angle)
@@ -385,8 +400,14 @@ func handle_vine_swinging(delta):
 	
 	swing_angle = new_angle
 	
-	var new_position = vine_anchor + Vector2(sin(swing_angle), cos(swing_angle)) * effective_vine_length
-	player.global_position = new_position
+	# NEW: Calculate position using visual swing radius and smoothing
+	var target_position = vine_anchor + Vector2(sin(swing_angle), cos(swing_angle)) * effective_vine_length
+	
+	# Apply smoothing to reduce jittery movement
+	if player_position_smoothing > 0.0:
+		player.global_position = player.global_position.lerp(target_position, 1.0 - player_position_smoothing)
+	else:
+		player.global_position = target_position
 	
 	var tangent_direction = Vector2(-cos(swing_angle), sin(swing_angle))
 	player.velocity = tangent_direction * swing_angular_velocity * effective_vine_length
