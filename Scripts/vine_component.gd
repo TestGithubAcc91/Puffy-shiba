@@ -221,24 +221,13 @@ func release_vine():
 		# Apply jump velocity
 		player.velocity.y = player.JUMP_VELOCITY
 		
-		# Determine dash direction based on swing momentum and player input
-		var dash_direction = Vector2.ZERO
-		
-		# Check if vine release dash is enabled - NO parry stack requirement!
+		# Check if vine release dash is enabled and player is actively inputting direction
 		if vine_release_dash_enabled:
-			# Priority 1: Current input direction
 			var input_direction = Input.get_axis("Move_Left", "Move_Right")
-			if abs(input_direction) > 0.1:
-				dash_direction = Vector2.LEFT if input_direction < 0 else Vector2.RIGHT
-			# Priority 2: Swing momentum direction
-			elif abs(swing_angular_velocity) > 0.1:
-				dash_direction = Vector2.LEFT if swing_angular_velocity < 0 else Vector2.RIGHT
-			# Priority 3: Player sprite facing direction
-			else:
-				dash_direction = Vector2.LEFT if player.animated_sprite.flip_h else Vector2.RIGHT
 			
-			# Trigger the dash using the player's existing dash system
-			if dash_direction != Vector2.ZERO:
+			# Only dash if player is actively pressing left or right
+			if abs(input_direction) > 0.1:
+				var dash_direction = Vector2.LEFT if input_direction < 0 else Vector2.RIGHT
 				trigger_vine_release_dash(dash_direction)
 		
 		# Clean up vine stuff
