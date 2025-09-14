@@ -1,4 +1,4 @@
-[gd_scene load_steps=44 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=43 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -8,7 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://bp1jjjj6d1sce" path="res://Scenes/coin.tscn" id="4_3dryh"]
 [ext_resource type="PackedScene" uid="uid://bxmjgaqbmcpmf" path="res://Scenes/killzone.tscn" id="5_wowpa"]
 [ext_resource type="PackedScene" uid="uid://b2vrnra2k4b62" path="res://Scenes/clover.tscn" id="6_i6g32"]
-[ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="7_1l0tm"]
 [ext_resource type="Texture2D" uid="uid://cpb1vtttqxmn3" path="res://Assets/sprites/MapSprites/forestTilemap.png" id="8_7nbq1"]
 [ext_resource type="Texture2D" uid="uid://bi0j2fpvt17pk" path="res://Assets/sprites/MapSprites/darkerDirt.png" id="9_exi56"]
 [ext_resource type="Texture2D" uid="uid://5mifn5x6hqap" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHP4.png" id="9_h4fw4"]
@@ -690,17 +689,6 @@ approach_detection_radius = 125.0
 vine_bend_compensation = 1.0
 segment_curve_intensity = 1.0
 
-[node name="Label" type="Label" parent="LevelHolder"]
-offset_left = -85.0
-offset_top = -70.0
-offset_right = 72.0
-offset_bottom = -47.0
-theme_override_colors/font_color = Color(0.0980392, 0.313726, 0.752941, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_fonts/font = ExtResource("7_1l0tm")
-theme_override_font_sizes/font_size = 8
-text = "John Deer returns....."
-
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="HealthBoxContainer" type="HBoxContainer" parent="UI" node_paths=PackedStringArray("hp_nodes")]
@@ -740,5 +728,6 @@ expand_mode = 2
 position = Vector2(106, -33)
 
 [node name="Zipline" parent="." instance=ExtResource("25_22asu")]
-position = Vector2(338, -28)
+position = Vector2(67, -25)
+zipline_speed = 175.0
 end_point = Vector2(100, 0)

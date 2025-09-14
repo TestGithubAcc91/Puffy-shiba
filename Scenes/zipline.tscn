@@ -1,22 +1,39 @@
-[gd_scene load_steps=3 format=3 uid="uid://do8wyc3dyl3gv"]
+[gd_scene load_steps=5 format=3 uid="uid://do8wyc3dyl3gv"]
 
 [ext_resource type="Script" uid="uid://cks5f2cx5mqmu" path="res://Scripts/zipline.gd" id="1_h6mey"]
+[ext_resource type="Texture2D" uid="uid://dalmwnw1pssyd" path="res://Assets/sprites/InteractableSprites/ziplineRope.png" id="2_lcu1y"]
+[ext_resource type="Texture2D" uid="uid://b6kby580kxowr" path="res://Assets/sprites/InteractableSprites/ziplineEnd.png" id="2_ulrhc"]
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_ulrhc"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_lcu1y"]
+radius = 9.21954
 
 [node name="Zipline" type="Node2D"]
 script = ExtResource("1_h6mey")
+vine_texture = ExtResource("2_lcu1y")
+vine_segments_per_unit = 0.18
 
 [node name="Line2D" type="Line2D" parent="."]
 
-[node name="StartArea" type="Area2D" parent="."]
+[node name="StartMarker" type="Node2D" parent="."]
+
+[node name="GrabArea" type="Area2D" parent="StartMarker"]
 collision_mask = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StartArea"]
-shape = SubResource("CircleShape2D_ulrhc")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartMarker/GrabArea"]
+scale = Vector2(0.25, 0.25)
+shape = SubResource("CircleShape2D_lcu1y")
 
-[node name="EndArea" type="Area2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="StartMarker"]
+texture = ExtResource("2_ulrhc")
+
+[node name="EndMarker" type="Node2D" parent="."]
+
+[node name="GrabArea" type="Area2D" parent="EndMarker"]
 collision_mask = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="EndArea"]
-shape = SubResource("CircleShape2D_ulrhc")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="EndMarker/GrabArea"]
+scale = Vector2(0.25, 0.25)
+shape = SubResource("CircleShape2D_lcu1y")
+
+[node name="Sprite2D" type="Sprite2D" parent="EndMarker"]
+texture = ExtResource("2_ulrhc")
