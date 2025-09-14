@@ -172,6 +172,8 @@ func create_end_sprite():
 	if end_sprite:
 		end_sprite.queue_free()
 	end_sprite = Sprite2D.new()
+	# Inherit z_index from parent
+	end_sprite.z_index = z_index
 	add_child(end_sprite)
 	if end_sprite_texture:
 		end_sprite.texture = end_sprite_texture
@@ -238,6 +240,8 @@ func create_vine_segments():
 	
 	for i in range(visible_segments):
 		var segment = AnimatedSprite2D.new()
+		# Inherit z_index from parent
+		segment.z_index = z_index
 		segment.sprite_frames = segment_frames
 		
 		var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
@@ -420,6 +424,8 @@ func create_detection_area():
 
 func create_grab_indicator():
 	grab_indicator = Sprite2D.new()
+	# Inherit z_index from parent
+	grab_indicator.z_index = z_index
 	add_child(grab_indicator)
 	var image = Image.create(int(grab_range * 2), int(grab_range * 2), false, Image.FORMAT_RGBA8)
 	image.fill(Color(0.0, 0.0, 1.0, 0.5))
@@ -430,6 +436,8 @@ func create_grab_indicator():
 
 func create_debug_label():
 	debug_label = Label.new()
+	# Inherit z_index from parent
+	debug_label.z_index = z_index
 	add_child(debug_label)
 	debug_label.position = Vector2(-50, vine_length + 40)
 	debug_label.size = Vector2(100, 60)

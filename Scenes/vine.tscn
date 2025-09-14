@@ -17,11 +17,11 @@ animations = [{
 }]
 
 [node name="Vine" type="AnimatedSprite2D"]
+z_index = -1
 sprite_frames = SubResource("SpriteFrames_krw3f")
 script = ExtResource("2_6slj2")
 end_sprite_texture = ExtResource("3_xaa8b")
 
 [node name="DarkerDirt2" type="Sprite2D" parent="."]
-z_index = 1
 position = Vector2(0, -8)
 texture = ExtResource("2_xaa8b")

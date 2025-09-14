@@ -17,7 +17,7 @@ class_name Zipline
 @export var end_point: Vector2 : set = _set_end_point
 
 @onready var line: Line2D = $Line2D
-@onready var vine_container: Node2D = $VineContainer
+@onready var vine_container: Node2D
 @onready var start_area: Area2D = $StartMarker/GrabArea
 @onready var end_area: Area2D = $EndMarker/GrabArea
 @onready var start_collision: CollisionShape2D = $StartMarker/GrabArea/CollisionShape2D
