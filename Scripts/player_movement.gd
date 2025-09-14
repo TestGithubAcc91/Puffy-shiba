@@ -6,8 +6,8 @@ const HIGH_JUMP_VELOCITY = -350.0
 
 @onready var animated_sprite: AnimatedSprite2D = $MainSprite
 @onready var glint_sprite: AnimatedSprite2D = $GlintSprite
+@onready var parry_spark: Sprite2D = $ParrySpark
 @onready var health_script = $HealthScript
-@onready var parry_label: Label = $Late_EarlyLabel
 @onready var vine_component = $VineComponent
 
 @export var air_puff_scene: PackedScene
@@ -17,31 +17,13 @@ var last_attack_was_unparryable: bool = false
 
 # Parry variables
 var parry_timer: Timer
-var parry_early_timer: Timer
 var is_parrying: bool = false
 @export var parry_duration: float = 0.4
 @export var parry_success_cooldown: float = 0.0
 @export var parry_fail_cooldown: float = 1.0
-@export var parry_early_delay: float = 0.15
 var parry_cooldown_timer: Timer
 var can_parry: bool = true
 var parry_was_successful: bool = false
-var damage_timer: Timer
-var recently_took_damage: bool = false
-var parry_end_timer: Timer
-var recently_parry_ended: bool = false
-
-# Text display variables
-var early_text_timer: Timer
-var showing_early_text: bool = false
-var early_fade_timer: Timer
-var is_fading_early_text: bool = false
-@export var early_fade_duration: float = 0.5
-var late_text_timer: Timer
-var late_fade_timer: Timer
-var is_fading_late_text: bool = false
-var showing_late_text: bool = false
-@export var late_fade_duration: float = 0.5
 
 # Parry freeze variables
 var parry_freeze_timer: Timer
@@ -101,8 +83,6 @@ var is_vine_release_dash: bool = false
 
 func _ready():
 	health_script.died.connect(_on_player_died)
-	if health_script.has_signal("health_decreased"):
-		health_script.health_decreased.connect(_on_health_decreased)
 	
 	setup_charge_system()
 	setup_ui()
@@ -112,10 +92,8 @@ func _ready():
 func setup_ui():
 	if glint_sprite:
 		glint_sprite.visible = false
-	if parry_label:
-		if not showing_early_text and not showing_late_text:
-			parry_label.visible = false
-			parry_label.text = ""
+	if parry_spark:
+		parry_spark.visible = false
 
 func setup_durations():
 	dash_duration = dash_distance / dash_speed
@@ -124,20 +102,13 @@ func setup_durations():
 func setup_timers():
 	var timer_configs = [
 		{timer = "parry_timer", wait_time = parry_duration, callback = "_on_parry_timeout"},
-		{timer = "parry_early_timer", wait_time = parry_early_delay, callback = "_on_parry_early_timeout"},
 		{timer = "parry_cooldown_timer", callback = "_on_parry_cooldown_timeout"},
 		{timer = "parry_pre_freeze_timer", wait_time = parry_pre_freeze_duration, callback = "_on_parry_pre_freeze_timeout"},
 		{timer = "parry_freeze_timer", wait_time = parry_freeze_duration, callback = "_on_parry_freeze_timeout"},
 		{timer = "dash_timer", wait_time = dash_duration, callback = "_on_dash_timeout"},
 		{timer = "dash_cooldown_timer", wait_time = dash_cooldown, callback = "_on_dash_cooldown_timeout"},
 		{timer = "bounce_timer", wait_time = bounce_delay, callback = "_on_bounce_timeout"},
-		{timer = "high_jump_cooldown_timer", wait_time = high_jump_cooldown, callback = "_on_high_jump_cooldown_timeout"},
-		{timer = "damage_timer", wait_time = parry_early_delay, callback = "_on_damage_timer_timeout"},
-		{timer = "parry_end_timer", wait_time = parry_early_delay, callback = "_on_parry_end_timer_timeout"},
-		{timer = "early_text_timer", wait_time = 1.0, callback = "_on_early_text_timeout"},
-		{timer = "early_fade_timer", wait_time = 0.02, callback = "_on_early_fade_tick"},
-		{timer = "late_text_timer", wait_time = 1.0, callback = "_on_late_text_timeout"},
-		{timer = "late_fade_timer", wait_time = 0.02, callback = "_on_late_fade_tick"}
+		{timer = "high_jump_cooldown_timer", wait_time = high_jump_cooldown, callback = "_on_high_jump_cooldown_timeout"}
 	]
 	
 	for config in timer_configs:
@@ -154,12 +125,22 @@ func _physics_process(delta: float) -> void:
 	handle_movement(delta)
 
 func handle_input():
-	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1:
+	# Check if player is swinging on a vine
+	var is_on_vine = vine_component && vine_component.is_swinging
+	
+	# Dash - cannot be used while on vine
+	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1 and not is_on_vine:
 		activate_dash()
+	
+	# Regular jump - works normally
 	if Input.is_action_just_pressed("Jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
-	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2:
+	
+	# High jump - cannot be used while on vine
+	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2 and not is_on_vine:
 		activate_high_jump()
+	
+	# Parry - works normally
 	if Input.is_action_just_pressed("Parry") and can_parry:
 		activate_parry()
 
@@ -304,8 +285,6 @@ func activate_parry():
 		glint_sprite.play("default")
 	
 	parry_timer.start()
-	if recently_took_damage:
-		parry_early_timer.start()
 
 func on_parry_success():
 	parry_was_successful = true
@@ -320,6 +299,9 @@ func on_parry_success():
 func _play_parry_animation():
 	if is_in_pre_freeze_parry:
 		animated_sprite.play("Parry")
+		# Activate ParrySpark sprite when playing Parry animation
+		if parry_spark:
+			parry_spark.visible = true
 
 # Movement abilities
 func activate_dash():
@@ -454,56 +436,12 @@ func assign_empty_texture_to_sprite(index: int):
 		else:
 			empty_charge_sprites[index].modulate.a = 0.3
 
-# Text display functions
-func show_parry_text(text: String, is_early: bool):
-	if not parry_label:
-		return
-	parry_label.text = text
-	parry_label.visible = true
-	parry_label.modulate.a = 1.0
-	
-	if is_early:
-		showing_early_text = true
-		is_fading_early_text = false
-		early_text_timer.start()
-	else:
-		showing_late_text = true
-		is_fading_late_text = false
-		late_text_timer.start()
-
-func fade_text(is_early: bool):
-	if not parry_label:
-		return
-		
-	var fade_duration = early_fade_duration if is_early else late_fade_duration
-	var fade_timer = early_fade_timer if is_early else late_fade_timer
-	var fade_amount = (1.0 / fade_duration) * fade_timer.wait_time
-	
-	parry_label.modulate.a -= fade_amount
-	
-	if parry_label.modulate.a <= 0.0:
-		parry_label.visible = false
-		parry_label.text = ""
-		parry_label.modulate.a = 1.0
-		fade_timer.stop()
-		
-		if is_early:
-			showing_early_text = false
-			is_fading_early_text = false
-		else:
-			showing_late_text = false
-			is_fading_late_text = false
-
 # Timer callbacks
 func _on_parry_timeout():
 	health_script.is_invulnerable = false
 	if glint_sprite:
 		glint_sprite.visible = false
 		glint_sprite.stop()
-	if parry_early_timer.time_left > 0:
-		parry_early_timer.stop()
-	recently_parry_ended = true
-	parry_end_timer.start()
 	last_attack_was_unparryable = false
 	if not parry_was_successful:
 		is_parrying = false
@@ -512,46 +450,22 @@ func _on_parry_timeout():
 	else:
 		can_parry = true
 
-func _on_parry_early_timeout():
-	if is_parrying and not parry_was_successful and parry_label and not last_attack_was_unparryable:
-		show_parry_text("Late!", false)
-
 func _on_parry_cooldown_timeout():
 	can_parry = true
-
-func _on_damage_timer_timeout():
-	recently_took_damage = false
-
-func _on_parry_end_timer_timeout():
-	recently_parry_ended = false
 
 func _on_parry_pre_freeze_timeout():
 	is_in_pre_freeze_parry = false
 	is_in_parry_freeze = true
 	Engine.time_scale = 1
+	# Hide ParrySpark sprite immediately when freeze begins
+	if parry_spark:
+		parry_spark.visible = false
 	parry_freeze_timer.start()
 
 func _on_parry_freeze_timeout():
 	is_in_parry_freeze = false
 	Engine.time_scale = 1.0
-
-func _on_early_text_timeout():
-	if parry_label:
-		is_fading_early_text = true
-		early_fade_timer.start()
-
-func _on_early_fade_tick():
-	if parry_label and is_fading_early_text:
-		fade_text(true)
-
-func _on_late_text_timeout():
-	if parry_label:
-		is_fading_late_text = true
-		late_fade_timer.start()
-
-func _on_late_fade_tick():
-	if parry_label and is_fading_late_text:
-		fade_text(false)
+	# ParrySpark is already hidden from _on_parry_pre_freeze_timeout()
 
 func _on_dash_timeout():
 	end_dash()
@@ -566,14 +480,6 @@ func _on_bounce_timeout():
 func _on_high_jump_cooldown_timeout():
 	can_high_jump = true
 
-func _on_health_decreased():
-	recently_took_damage = true
-	damage_timer.start()
-	
-	if recently_parry_ended and parry_label and not last_attack_was_unparryable:
-		show_parry_text("Early!", true)
-		recently_parry_ended = false
-
 func set_last_attack_unparryable(unparryable: bool):
 	last_attack_was_unparryable = unparryable
 
@@ -583,7 +489,7 @@ func _on_player_died():
 	is_bouncing = false
 	is_in_parry_freeze = false
 	is_in_pre_freeze_parry = false
-	is_vine_release_dash = false  # Reset vine release dash flag
+	is_vine_release_dash = false
 	
 	for timer in [parry_timer, parry_cooldown_timer, parry_freeze_timer, parry_pre_freeze_timer, dash_timer, dash_cooldown_timer, bounce_timer]:
 		timer.stop()
@@ -594,6 +500,9 @@ func _on_player_died():
 	if glint_sprite:
 		glint_sprite.visible = false
 		glint_sprite.stop()
+	
+	if parry_spark:
+		parry_spark.visible = false
 	
 	reset_parry_stacks()
 	Engine.time_scale = 0.2

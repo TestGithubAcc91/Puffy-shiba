@@ -176,7 +176,7 @@ dash_cooldown = 0.35
 [node name="MainSprite" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -7)
 sprite_frames = SubResource("SpriteFrames_i6g32")
-animation = &"Run"
+animation = &"Parry"
 autoplay = "Idle"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
