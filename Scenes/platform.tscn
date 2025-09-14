@@ -8,6 +8,7 @@ size = Vector2(32, 0)
 [node name="Platform" type="AnimatableBody2D"]
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+z_index = -1
 texture = ExtResource("1_1rc8e")
 region_enabled = true
 region_rect = Rect2(0, 4, 32, 8)

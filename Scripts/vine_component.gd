@@ -23,9 +23,6 @@ class_name VineComponent
 @export var player_velocity_boost_multiplier: float = 0.8
 @export var approach_direction_boost_multiplier: float = 1.2
 
-# Minimum velocity threshold to allow swinging when directly under vine
-@export var min_velocity_for_under_vine_swing: float = 50.0
-
 @export_group("Vine Visual Adjustment")
 # NEW: Adjustment factor to account for vine bending
 @export var vine_bend_compensation: float = 0.92  # Reduces effective swing radius
@@ -107,21 +104,12 @@ func clear_nearby_vine(vine: Vine):
 
 func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 	var total_boost = base_initial_boost
-	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
-	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
 	
-	# Check if player has sufficient velocity when directly under vine
-	if is_directly_under_vine:
-		var player_speed = player.velocity.length()
-		if player_speed >= min_velocity_for_under_vine_swing:
-			var velocity_factor = clamp(player_speed / 200.0, 0.2, 0.6)
-			total_boost *= velocity_factor
-		else:
-			return 0.0
-	
-	if approach_time > 0.0 and not is_directly_under_vine:
+	# Always provide base boost regardless of position or approach time
+	if approach_time > 0.0:
 		if approach_time < min_approach_time_for_boost:
-			var minimal_boost = max_approach_boost * 0.1
+			# Still provide some boost even for short approaches
+			var minimal_boost = max_approach_boost * 0.3
 			total_boost += minimal_boost
 		else:
 			var time_progress = clamp((approach_time - min_approach_time_for_boost) / 
@@ -137,9 +125,10 @@ func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 		var velocity_direction = player.velocity.normalized()
 		var dot_product = velocity_direction.dot(to_vine)
 		
-		if dot_product > 0.0 and not is_directly_under_vine:
+		if dot_product > 0.0:
 			velocity_boost *= approach_direction_boost_multiplier * dot_product
-		elif is_directly_under_vine:
+		else:
+			# Even if not moving directly toward vine, use horizontal velocity
 			var horizontal_velocity = Vector2(player.velocity.x, 0.0).length()
 			velocity_boost = horizontal_velocity * player_velocity_boost_multiplier * 0.5
 		
@@ -151,23 +140,12 @@ func determine_initial_swing_direction(vine: Vine) -> float:
 	if not player:
 		return 1.0
 	
-	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
-	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
+	# Always use player velocity if available
+	var horizontal_velocity = player.velocity.x
+	if abs(horizontal_velocity) > 10.0:
+		return sign(horizontal_velocity)
 	
-	if is_directly_under_vine:
-		var player_speed = player.velocity.length()
-		if player_speed >= min_velocity_for_under_vine_swing:
-			var horizontal_velocity = player.velocity.x
-			if abs(horizontal_velocity) > 10.0:
-				return sign(horizontal_velocity) * 0.7
-		return 0.0
-	
-	var velocity_direction = player.velocity.normalized()
-	var horizontal_component = velocity_direction.x
-	
-	if abs(horizontal_component) > 0.3:
-		return sign(horizontal_component)
-	
+	# If no significant velocity, use position relative to vine
 	var player_relative_x = player.global_position.x - vine.vine_anchor.x
 	return sign(player_relative_x) if abs(player_relative_x) > 5.0 else 1.0
 
@@ -202,27 +180,15 @@ func grab_vine(vine: Vine):
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
-	var player_speed = player.velocity.length()
-	var horizontal_distance_to_vine = abs(player.global_position.x - vine.vine_anchor.x)
-	var is_directly_under_vine = horizontal_distance_to_vine <= vine.grab_range
-	var is_short_approach = approach_time < min_approach_time_for_boost
+	# REMOVED: All the velocity/position checks that were preventing momentum
+	# Always apply initial boost and swing direction
+	var initial_boost = calculate_initial_speed_boost(vine, approach_time)
+	var swing_direction = determine_initial_swing_direction(vine)
+	# NEW: Use visual swing radius for angular velocity calculation
+	swing_angular_velocity = (initial_boost / visual_swing_radius) * swing_direction
 	
-	if is_directly_under_vine and player_speed < min_velocity_for_under_vine_swing:
-		swing_angular_velocity = 0.0
-		swing_angle = 0.0
-		player.global_position = vine.vine_anchor + Vector2(0, visual_swing_radius)
-	elif is_short_approach and not is_directly_under_vine:
-		swing_angular_velocity = 0.0
-		swing_angle = 0.0
-		player.global_position = vine.vine_anchor + Vector2(0, visual_swing_radius)
-	else:
-		var initial_boost = calculate_initial_speed_boost(vine, approach_time)
-		var swing_direction = determine_initial_swing_direction(vine)
-		# NEW: Use visual swing radius for angular velocity calculation
-		swing_angular_velocity = (initial_boost / visual_swing_radius) * swing_direction
-		
-		var max_initial_angular_velocity = (max_swing_velocity * 1.2) / visual_swing_radius
-		swing_angular_velocity = clamp(swing_angular_velocity, -max_initial_angular_velocity, max_initial_angular_velocity)
+	var max_initial_angular_velocity = (max_swing_velocity * 1.2) / visual_swing_radius
+	swing_angular_velocity = clamp(swing_angular_velocity, -max_initial_angular_velocity, max_initial_angular_velocity)
 	
 	time_at_limit = 0.0
 	vine.reset_approach_timer()
