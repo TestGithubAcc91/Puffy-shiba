@@ -6,6 +6,7 @@ const HIGH_JUMP_VELOCITY = -350.0
 
 @onready var animated_sprite: AnimatedSprite2D = $MainSprite
 @onready var glint_sprite: AnimatedSprite2D = $GlintSprite
+@onready var zipline_friction: AnimatedSprite2D = $ZiplineFriction
 @onready var parry_spark: Sprite2D = $ParrySpark
 @onready var health_script = $HealthScript
 @onready var vine_component = $VineComponent
@@ -98,6 +99,8 @@ func _ready():
 func setup_ui():
 	if glint_sprite:
 		glint_sprite.visible = false
+	if zipline_friction:
+		zipline_friction.visible = false
 	if parry_spark:
 		parry_spark.visible = false
 
@@ -129,6 +132,8 @@ func setup_timers():
 func _physics_process(delta: float) -> void:
 	handle_input()
 	handle_movement(delta)
+	# Update zipline friction VFX every frame to ensure proper state
+	update_zipline_friction_vfx()
 
 func handle_input():
 	# Check if player is swinging on a vine OR on a zipline
@@ -153,8 +158,8 @@ func handle_input():
 	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2 and not is_on_vine and not is_on_zipline_check:
 		activate_high_jump()
 	
-	# Parry - works normally when not on zipline
-	if Input.is_action_just_pressed("Parry") and can_parry and not is_on_zipline_check:
+	# Parry - NOW WORKS ON ZIPLINE! Only blocked by vine swinging
+	if Input.is_action_just_pressed("Parry") and can_parry and not is_on_vine:
 		activate_parry()
 
 # Add this to your handle_movement() function
@@ -237,17 +242,48 @@ func update_sprite_direction(direction: float):
 		animated_sprite.flip_h = false
 		if glint_sprite:
 			glint_sprite.position.x = abs(glint_sprite.position.x) * -1
+		if zipline_friction:
+			zipline_friction.flip_h = false
 	elif direction < 0:
 		animated_sprite.flip_h = true
 		if glint_sprite:
 			glint_sprite.position.x = abs(glint_sprite.position.x)
+		if zipline_friction:
+			zipline_friction.flip_h = true
 
 func update_animations(direction: float):
 	if not is_in_pre_freeze_parry and not is_dashing:
-		if is_on_floor():
+		if is_on_zipline:
+			# Special handling for zipline animations
+			if is_parrying or is_in_parry_freeze:
+				animated_sprite.play("Parry")
+			else:
+				animated_sprite.play("Jump")  # Or create a specific zipline animation
+		elif is_on_floor():
 			animated_sprite.play("Idle" if direction == 0 else "Run")
 		else:
 			animated_sprite.play("Jump")
+
+func update_zipline_friction_vfx():
+	if not zipline_friction:
+		return
+		
+	if is_on_zipline and current_zipline:
+		# Show friction effect when on zipline
+		zipline_friction.visible = true
+		if not zipline_friction.is_playing():
+			zipline_friction.play("default")
+		
+		# Update position based on player facing direction (like glint_sprite)
+		if animated_sprite.flip_h:
+			zipline_friction.position.x = abs(zipline_friction.position.x)
+		else:
+			zipline_friction.position.x = abs(zipline_friction.position.x) * -1
+	else:
+		# Hide friction effect when not on zipline
+		if zipline_friction.visible:
+			zipline_friction.visible = false
+			zipline_friction.stop()
 
 func spawn_air_puff():
 	spawn_air_effect(air_puff_scene, Vector2(0, -6), false)
@@ -301,6 +337,10 @@ func activate_parry():
 		glint_sprite.play("default")
 	
 	parry_timer.start()
+	
+	# Update animation if on zipline
+	if is_on_zipline:
+		animated_sprite.play("Parry")
 
 func on_parry_success():
 	parry_was_successful = true
@@ -524,6 +564,10 @@ func _on_player_died():
 		glint_sprite.visible = false
 		glint_sprite.stop()
 	
+	if zipline_friction:
+		zipline_friction.visible = false
+		zipline_friction.stop()
+	
 	if parry_spark:
 		parry_spark.visible = false
 	
@@ -543,11 +587,12 @@ func grab_vine(vine: Vine):
 
 func handle_zipline_movement(delta: float):
 	# Movement is handled by the zipline itself
-	# Just update animations
+	# Just update animations and VFX
 	if current_zipline:
 		var zipline_dir = current_zipline.get_zipline_direction_vector()
 		update_sprite_direction(zipline_dir.x)
-		animated_sprite.play("Jump")  # Or create a specific zipline animation
+		# Animation is now handled in update_animations() function
+		update_animations(0.0)  # Pass 0 since horizontal input is blocked on zipline
 	move_and_slide()
 
 func grab_zipline():
@@ -576,10 +621,10 @@ func release_zipline():
 		current_zipline.release_player()
 		is_on_zipline = false
 		current_zipline = null
-		
-
+		# VFX will be updated in _physics_process via update_zipline_friction_vfx()
 	else:
 		# Simple release without dash
 		current_zipline.release_player()
 		is_on_zipline = false
 		current_zipline = null
+		# VFX will be updated in _physics_process via update_zipline_friction_vfx()

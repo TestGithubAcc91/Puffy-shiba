@@ -38,10 +38,9 @@ class_name Vine
 @export var approach_direction_boost_multiplier: float = 1.2
 
 @export_group("Vine Bend Compensation")
-# NEW: Settings to adjust for vine bending
-@export var vine_bend_compensation: float = 0.92  # How much to reduce apparent length
-@export var segment_curve_intensity: float = 0.75  # How much each segment curves
-@export var progressive_curve_reduction: float = 0.95  # Reduces curve towards the end
+@export var vine_bend_compensation: float = 0.92
+@export var segment_curve_intensity: float = 0.75
+@export var progressive_curve_reduction: float = 0.95
 
 var detection_area: Area2D
 var approach_detection_area: Area2D
@@ -59,14 +58,14 @@ var approach_angle_tolerance_radians: float
 var vine_segment_sprites: Array[AnimatedSprite2D] = []
 var end_sprite: Sprite2D
 
-# NEW: Variables for vine return animation and bend compensation
+# FIXED: Better vine component tracking
 var vine_component_ref: VineComponent = null
 var end_sprite_base_rotation: float = 0.0
-var visual_vine_length: float = 0.0  # Adjusted length for visual consistency
+var visual_vine_length: float = 0.0
 
 func _ready():
 	vine_anchor = global_position
-	visual_vine_length = vine_length * vine_bend_compensation  # NEW: Calculate visual length
+	visual_vine_length = vine_length * vine_bend_compensation
 	current_vine_bottom = vine_anchor + Vector2(0, vine_length)
 	approach_angle_tolerance_radians = deg_to_rad(approach_angle_tolerance_degrees)
 	end_sprite_base_rotation = deg_to_rad(end_sprite_rotation_degrees)
@@ -108,7 +107,7 @@ func create_default_vine_holder_sprite_frames() -> SpriteFrames:
 
 func set_vine_length(new_length: float):
 	vine_length = new_length
-	visual_vine_length = vine_length * vine_bend_compensation  # NEW: Update visual length
+	visual_vine_length = vine_length * vine_bend_compensation
 	if not is_player_grabbing:
 		current_vine_bottom = vine_anchor + Vector2(0, vine_length)
 	if detection_area and not is_player_grabbing:
@@ -209,7 +208,6 @@ func update_end_sprite_position():
 	if not is_player_grabbing:
 		end_sprite.position = Vector2(0, vine_length) + end_sprite_offset
 
-# NEW: Calculate the actual distance a vine segment chain would reach
 func calculate_segment_chain_length(segments: int, segment_spacing: float, curve_factor: float = 0.8) -> float:
 	if segments <= 1:
 		return segment_spacing
@@ -220,7 +218,7 @@ func calculate_segment_chain_length(segments: int, segment_spacing: float, curve
 	for i in range(segments):
 		var segment_length = segment_spacing * current_curve
 		total_length += segment_length
-		current_curve *= progressive_curve_reduction  # Each segment curves slightly less
+		current_curve *= progressive_curve_reduction
 	
 	return total_length
 
@@ -236,22 +234,18 @@ func create_vine_segments():
 	var total_segments = max(1, int(vine_length / vine_segment_spacing))
 	var visible_segments = max(0, total_segments - remove_end_segments)
 	
-	# NEW: Calculate cumulative position considering bend
 	var cumulative_distance = 0.0
 	
 	for i in range(visible_segments):
 		var segment = AnimatedSprite2D.new()
 		segment.sprite_frames = segment_frames
 		
-		# NEW: Progressive curve calculation
 		var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
-		var curve_intensity = segment_curve_intensity * (1.0 - segment_progress * 0.3)  # Reduce curve towards end
+		var curve_intensity = segment_curve_intensity * (1.0 - segment_progress * 0.3)
 		
-		# Calculate this segment's contribution to the chain
 		var segment_length = vine_segment_spacing * curve_intensity
 		cumulative_distance += segment_length
 		
-		# Position segment based on cumulative curved distance, but map to straight vine length
 		var straight_position_ratio = cumulative_distance / visual_vine_length
 		straight_position_ratio = clamp(straight_position_ratio, 0.0, 1.0)
 		var segment_y = straight_position_ratio * vine_length
@@ -309,7 +303,6 @@ func create_default_vine_segment_sprite_frames() -> SpriteFrames:
 	return frames
 
 func update_vine_segments_for_swinging():
-	# NEW: Get swing data from vine component if available
 	var swing_angle = 0.0
 	var swing_angular_velocity = 0.0
 	var vine_returning = false
@@ -317,12 +310,11 @@ func update_vine_segments_for_swinging():
 	if vine_component_ref:
 		swing_angle = vine_component_ref.swing_angle
 		swing_angular_velocity = vine_component_ref.swing_angular_velocity
-		vine_returning = vine_component_ref.vine_returning_to_rest
+		vine_returning = vine_component_ref.vine_returning_to_rest and vine_component_ref.return_vine == self
 	
 	# Handle return animation case
 	if vine_returning:
 		var vine_direction = Vector2(sin(swing_angle), cos(swing_angle))
-		# NEW: Use visual vine length for return animation
 		var vine_visual_distance = visual_vine_length
 		var total_segments = max(1, int(vine_length / vine_segment_spacing))
 		
@@ -331,7 +323,7 @@ func update_vine_segments_for_swinging():
 			var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
 			var straight_pos = Vector2(0, segment_progress * vine_length)
 			var curved_pos = vine_direction * (segment_progress * vine_visual_distance)
-			var curve_strength = segment_progress * 0.6  # Reduced curve for return animation
+			var curve_strength = segment_progress * 0.6
 			segment.position = straight_pos.lerp(curved_pos, curve_strength)
 			
 			if i < vine_segment_sprites.size() - 1:
@@ -351,7 +343,6 @@ func update_vine_segments_for_swinging():
 			var end_direction = vine_direction
 			var end_position = end_direction * vine_visual_distance + end_sprite_offset
 			end_sprite.position = end_position
-			# NEW: Keep end sprite rotation locked if enabled
 			if end_sprite_locks_rotation:
 				end_sprite.rotation = end_sprite_base_rotation
 			else:
@@ -375,7 +366,6 @@ func update_vine_segments_for_swinging():
 	
 	var to_vine_bottom = current_vine_bottom - vine_anchor
 	var vine_direction = to_vine_bottom.normalized()
-	# NEW: Use visual vine length for consistency with player position
 	var vine_visual_distance = visual_vine_length
 	var swing_speed = player.velocity.length()
 	var swing_intensity = clamp(swing_speed / 300.0, 0.0, 2.0)
@@ -386,7 +376,6 @@ func update_vine_segments_for_swinging():
 		var segment_progress = float(i) / float(total_segments - 1) if total_segments > 1 else 0.0
 		var straight_pos = Vector2(0, segment_progress * vine_length)
 		var curved_pos = vine_direction * (segment_progress * vine_visual_distance)
-		# NEW: Adjusted curve strength to better match player position
 		var curve_strength = segment_progress * segment_curve_intensity
 		segment.position = straight_pos.lerp(curved_pos, curve_strength)
 		
@@ -407,7 +396,6 @@ func update_vine_segments_for_swinging():
 		var end_direction = vine_direction
 		var end_position = end_direction * vine_visual_distance + end_sprite_offset
 		end_sprite.position = end_position
-		# NEW: Keep end sprite rotation locked if enabled
 		if end_sprite_locks_rotation:
 			end_sprite.rotation = end_sprite_base_rotation
 		else:
@@ -491,7 +479,7 @@ func update_debug_info():
 		return
 	var debug_text = ""
 	debug_text += "Vine Length: " + str(int(vine_length)) + "px\n"
-	debug_text += "Visual Length: " + str(int(visual_vine_length)) + "px\n"  # NEW: Show visual length
+	debug_text += "Visual Length: " + str(int(visual_vine_length)) + "px\n"
 	debug_text += "Grab Range: " + str(int(grab_range)) + "px\n"
 	debug_text += "Approach Area: " + str(int(approach_detection_radius)) + "px\n"
 	debug_text += "Segments: " + str(vine_segment_sprites.size()) + "\n"
@@ -509,13 +497,16 @@ func update_debug_info():
 
 func _on_body_entered(body):
 	if body.has_method("grab_vine"):
-		player = body
+		# FIXED: Only set player reference if no one is currently grabbing this vine
+		if not is_player_grabbing:
+			player = body
 		player_in_grab_area = true
 		if body.has_node("VineComponent"):
 			var vine_component = body.get_node("VineComponent")
-			vine_component.nearby_vine = self
-		if grab_indicator:
+			vine_component.set_nearby_vine(self)
+		if grab_indicator and not is_player_grabbing:
 			grab_indicator.visible = true
+		# Only auto-grab if the player isn't already swinging on another vine
 		if body.has_node("VineComponent"):
 			var vine_component = body.get_node("VineComponent")
 			if not vine_component.is_swinging:
@@ -525,27 +516,41 @@ func _on_body_exited(body):
 	if body.has_method("grab_vine"):
 		if player == body:
 			if body.has_node("VineComponent"):
-				body.get_node("VineComponent").nearby_vine = null
-			player = null
+				body.get_node("VineComponent").clear_nearby_vine(self)
+			# FIXED: Only clear player reference if they're not currently grabbing this vine
+			if not is_player_grabbing:
+				player = null
 		player_in_grab_area = false
 		if grab_indicator:
 			grab_indicator.visible = false
 
 func attach_player(p: CharacterBody2D):
+	# FIXED: Only force release from other vines, not this one
+	if p.has_node("VineComponent"):
+		var vine_comp = p.get_node("VineComponent")
+		if vine_comp.current_vine and vine_comp.current_vine != self:
+			vine_comp.current_vine.force_release_player()
+	
 	player = p
 	is_player_grabbing = true
 	time_moving_horizontally_towards_vine = 0.0
 	
-	# NEW: Store reference to vine component for animation access
+	# Store reference to vine component for animation access
 	if player and player.has_node("VineComponent"):
 		vine_component_ref = player.get_node("VineComponent")
 
 func release_player():
+	is_player_grabbing = false
+	# Keep the vine component reference for the return animation
+	# Don't clear player reference immediately - let area detection handle it
+
+func force_release_player():
+	"""Force release player immediately, used when switching to another vine"""
 	player = null
 	is_player_grabbing = false
-	
-	# Keep the vine component reference for the return animation
-	# Don't clear it here - let the VineComponent handle its lifecycle
+	# FIXED: Clear vine component reference immediately on force release
+	if vine_component_ref:
+		vine_component_ref = null
 
 func get_swing_direction_to_player() -> Vector2:
 	if not player:
@@ -570,6 +575,5 @@ func reset_approach_timer():
 func get_approach_progress(max_time: float = 3.0) -> float:
 	return clamp(time_moving_horizontally_towards_vine / max_time, 0.0, 1.0)
 
-# NEW: Clear vine component reference when it's no longer needed
 func clear_vine_component_ref():
 	vine_component_ref = null

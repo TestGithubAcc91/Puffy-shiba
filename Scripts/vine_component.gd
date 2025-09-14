@@ -24,9 +24,8 @@ class_name VineComponent
 @export var approach_direction_boost_multiplier: float = 1.2
 
 @export_group("Vine Visual Adjustment")
-# NEW: Adjustment factor to account for vine bending
-@export var vine_bend_compensation: float = 0.92  # Reduces effective swing radius
-@export var player_position_smoothing: float = 0.1  # Smooths player position adjustments
+@export var vine_bend_compensation: float = 0.92
+@export var player_position_smoothing: float = 0.1
 
 @export_group("Vine Return Animation")
 @export var vine_return_damping: float = 0.95
@@ -105,10 +104,8 @@ func clear_nearby_vine(vine: Vine):
 func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 	var total_boost = base_initial_boost
 	
-	# Always provide base boost regardless of position or approach time
 	if approach_time > 0.0:
 		if approach_time < min_approach_time_for_boost:
-			# Still provide some boost even for short approaches
 			var minimal_boost = max_approach_boost * 0.3
 			total_boost += minimal_boost
 		else:
@@ -128,7 +125,6 @@ func calculate_initial_speed_boost(vine: Vine, approach_time: float) -> float:
 		if dot_product > 0.0:
 			velocity_boost *= approach_direction_boost_multiplier * dot_product
 		else:
-			# Even if not moving directly toward vine, use horizontal velocity
 			var horizontal_velocity = Vector2(player.velocity.x, 0.0).length()
 			velocity_boost = horizontal_velocity * player_velocity_boost_multiplier * 0.5
 		
@@ -140,19 +136,23 @@ func determine_initial_swing_direction(vine: Vine) -> float:
 	if not player:
 		return 1.0
 	
-	# Always use player velocity if available
 	var horizontal_velocity = player.velocity.x
 	if abs(horizontal_velocity) > 10.0:
 		return sign(horizontal_velocity)
 	
-	# If no significant velocity, use position relative to vine
 	var player_relative_x = player.global_position.x - vine.vine_anchor.x
 	return sign(player_relative_x) if abs(player_relative_x) > 5.0 else 1.0
 
 func grab_vine(vine: Vine):
-	# Stop any ongoing vine return animation if we're grabbing the same vine
+	# FIXED: Properly clean up previous vine before grabbing new one
+	if is_swinging and current_vine and current_vine != vine:
+		# Clean up previous vine completely
+		cleanup_current_vine()
+	
+	# FIXED: Stop any ongoing return animation for the new vine
 	if vine_returning_to_rest and return_vine == vine:
 		vine_returning_to_rest = false
+		return_vine.clear_vine_component_ref()
 		return_vine = null
 	
 	current_vine = vine
@@ -164,12 +164,10 @@ func grab_vine(vine: Vine):
 	last_swing_direction = 0
 	current_grab_distance = vine.vine_length + 5.0
 	
-	# NEW: Calculate visual swing radius with bend compensation
 	visual_swing_radius = current_grab_distance * vine_bend_compensation
 	
 	var to_player = player.global_position - vine.vine_anchor
 	var direction = to_player.normalized()
-	# NEW: Position player using visual swing radius
 	player.global_position = vine.vine_anchor + direction * visual_swing_radius
 	
 	to_player = player.global_position - vine.vine_anchor
@@ -180,11 +178,8 @@ func grab_vine(vine: Vine):
 	elif swing_angle < -max_swing_angle_radians:
 		swing_angle = -max_swing_angle_radians
 	
-	# REMOVED: All the velocity/position checks that were preventing momentum
-	# Always apply initial boost and swing direction
 	var initial_boost = calculate_initial_speed_boost(vine, approach_time)
 	var swing_direction = determine_initial_swing_direction(vine)
-	# NEW: Use visual swing radius for angular velocity calculation
 	swing_angular_velocity = (initial_boost / visual_swing_radius) * swing_direction
 	
 	var max_initial_angular_velocity = (max_swing_velocity * 1.2) / visual_swing_radius
@@ -192,6 +187,26 @@ func grab_vine(vine: Vine):
 	
 	time_at_limit = 0.0
 	vine.reset_approach_timer()
+
+# FIXED: New function to properly clean up current vine
+func cleanup_current_vine():
+	if current_vine:
+		# Force release the player from the old vine
+		current_vine.force_release_player()
+		# Clear the vine component reference from the old vine
+		current_vine.clear_vine_component_ref()
+		current_vine = null
+	
+	# Reset all swing state
+	is_swinging = false
+	current_grab_distance = 0.0
+	visual_swing_radius = 0.0
+	time_at_limit = 0.0
+	inputs_blocked = false
+	blocked_direction = 0
+	last_swing_direction = 0
+	swing_angle = 0.0
+	swing_angular_velocity = 0.0
 
 func release_vine():
 	if current_vine:
@@ -204,61 +219,44 @@ func release_vine():
 		if vine_release_dash_enabled:
 			var input_direction = Input.get_axis("Move_Left", "Move_Right")
 			
-			# Only dash if player is actively pressing left or right
 			if abs(input_direction) > 0.1:
 				var dash_direction = Vector2.LEFT if input_direction < 0 else Vector2.RIGHT
 				trigger_vine_release_dash(dash_direction)
 		
-		# Clean up vine stuff
-		vine_returning_to_rest = true
-		return_vine = current_vine
+		# FIXED: Store vine reference for return animation before cleanup
+		var vine_to_animate = current_vine
 		
-		current_vine.release_player()
-		current_vine = null
-		is_swinging = false
-		current_grab_distance = 0.0
-		visual_swing_radius = 0.0  # NEW: Reset visual radius
-		time_at_limit = 0.0
-		inputs_blocked = false
-		blocked_direction = 0
-		last_swing_direction = 0
+		# Clean up vine connection
+		cleanup_current_vine()
+		
+		# Set up return animation AFTER cleanup
+		vine_returning_to_rest = true
+		return_vine = vine_to_animate
 
 func trigger_vine_release_dash(direction: Vector2):
-	# Vine release dash bypasses ALL normal dash restrictions - no parry stack requirement!
 	if player.is_dashing:
 		return
 	
-	# Force the dash to work regardless of player's dash state
 	var original_can_dash = player.can_dash
-	var original_stacks = player.current_parry_stacks
 	
-	# Set up dash variables (using player's existing dash mechanics)
-	player.dash_started_on_ground = false  # We're in the air from vine release
+	player.dash_started_on_ground = false
 	player.was_on_ground_before_dash = false
 	player.dash_start_time = Time.get_ticks_msec() / 1000.0
 	player.dash_direction = direction * vine_release_dash_force_multiplier
 	player.is_dashing = true
 	player.can_dash = false
 	
-	# Mark this as a vine release dash to allow vertical movement
 	player.is_vine_release_dash = true
 	
-	# Don't modify parry stacks at all - vine release dash is free!
-	
-	# Visual effects and animation
 	player.spawn_air_puff()
 	player.animated_sprite.play("Dash")
 	
-	# Start dash timer but handle cooldown based on original state
 	player.dash_timer.start()
 	if original_can_dash:
-		# If player could dash before, don't put it on cooldown
 		player.can_dash = true
 	else:
-		# If player couldn't dash before, start the cooldown
 		player.dash_cooldown_timer.start()
 	
-	# Update sprite direction to match dash direction
 	if direction.x < 0:
 		player.animated_sprite.flip_h = true
 		if player.glint_sprite:
@@ -295,7 +293,6 @@ func handle_vine_swinging(delta):
 		return
 	
 	var vine_anchor = current_vine.vine_anchor
-	# NEW: Use visual swing radius instead of grab distance
 	var effective_vine_length = visual_swing_radius
 	var gravity_magnitude = player.get_gravity().y
 	var pendulum_acceleration = -(gravity_magnitude * gravity_multiplier_while_swinging / effective_vine_length) * sin(swing_angle)
@@ -366,10 +363,8 @@ func handle_vine_swinging(delta):
 	
 	swing_angle = new_angle
 	
-	# NEW: Calculate position using visual swing radius and smoothing
 	var target_position = vine_anchor + Vector2(sin(swing_angle), cos(swing_angle)) * effective_vine_length
 	
-	# Apply smoothing to reduce jittery movement
 	if player_position_smoothing > 0.0:
 		player.global_position = player.global_position.lerp(target_position, 1.0 - player_position_smoothing)
 	else:

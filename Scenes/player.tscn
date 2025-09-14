@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://bkfnr4qat1ah0"]
+[gd_scene load_steps=38 format=3 uid="uid://bkfnr4qat1ah0"]
 
 [ext_resource type="Script" uid="uid://dbdi6y3t2arwa" path="res://Scripts/player_movement.gd" id="1_cvnsp"]
 [ext_resource type="PackedScene" uid="uid://cw3hs2qsg2k4t" path="res://Scenes/air_puff_H.tscn" id="2_pu2lt"]
@@ -14,6 +14,7 @@
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="10_tx1dd"]
 [ext_resource type="Script" uid="uid://ciukewv7haujl" path="res://Scripts/vine_component.gd" id="13_ukyrk"]
 [ext_resource type="Texture2D" uid="uid://dfvr42g7lumlw" path="res://Assets/sprites/VFXSprites/parrySpark.png" id="14_7dp3o"]
+[ext_resource type="Texture2D" uid="uid://nxsnbivw3ij4" path="res://Assets/sprites/PlayerSprites/ziplineFriction.png" id="15_h4iuc"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_igrcy"]
 atlas = ExtResource("7_gymyn")
@@ -160,6 +161,35 @@ animations = [{
 "speed": 7.0
 }]
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_2ijsl"]
+atlas = ExtResource("15_h4iuc")
+region = Rect2(0, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_p1odr"]
+atlas = ExtResource("15_h4iuc")
+region = Rect2(16, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0gysh"]
+atlas = ExtResource("15_h4iuc")
+region = Rect2(32, 0, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_vfarp"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2ijsl")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_p1odr")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0gysh")
+}],
+"loop": true,
+"name": &"default",
+"speed": 10.0
+}]
+
 [node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("empty_charge_sprite_1", "empty_charge_sprite_2", "empty_charge_sprite_3")]
 script = ExtResource("1_cvnsp")
 air_puff_scene = ExtResource("2_pu2lt")
@@ -240,3 +270,10 @@ position = Vector2(1, -8)
 rotation = -0.70714
 scale = Vector2(1.3, 1.3)
 texture = ExtResource("14_7dp3o")
+
+[node name="ZiplineFriction" type="AnimatedSprite2D" parent="."]
+z_index = -1
+position = Vector2(-3, -5)
+sprite_frames = SubResource("SpriteFrames_vfarp")
+autoplay = "default"
+frame_progress = 0.756103
