@@ -21,49 +21,11 @@
 [ext_resource type="Texture2D" uid="uid://dprc7yt3rbbe6" path="res://Assets/sprites/MapSprites/trees.png" id="12_22asu"]
 [ext_resource type="Texture2D" uid="uid://bhhpohq32ugvh" path="res://Assets/sprites/PlayerGUI/puffyHP/puffyHPFade.png" id="13_1phco"]
 [ext_resource type="PackedScene" uid="uid://beodtqr1g8lyc" path="res://Scenes/charge.tscn" id="13_iivbl"]
+[ext_resource type="PackedScene" uid="uid://bej301f82t1dg" path="res://Scenes/spikes.tscn" id="16_22asu"]
 [ext_resource type="PackedScene" uid="uid://c5dckssmfxqgb" path="res://Scenes/acopter.tscn" id="16_nnt18"]
+[ext_resource type="PackedScene" uid="uid://bwa1rnpufmet6" path="res://Scenes/spike.tscn" id="17_fkdbe"]
 [ext_resource type="PackedScene" uid="uid://do0b3q7js88n6" path="res://Scenes/vine.tscn" id="18_85qyi"]
 [ext_resource type="PackedScene" uid="uid://do8wyc3dyl3gv" path="res://Scenes/zipline.tscn" id="25_22asu"]
-
-[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
-
-[sub_resource type="Animation" id="Animation_wrm1d"]
-resource_name = "Move"
-length = 2.0
-loop_mode = 2
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 2),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [Vector2(273, 6), Vector2(329, 6)]
-}
-
-[sub_resource type="Animation" id="Animation_3dryh"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(287, 6)]
-}
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_wowpa"]
-_data = {
-&"Move": SubResource("Animation_wrm1d"),
-&"RESET": SubResource("Animation_3dryh")
-}
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_wowpa"]
 texture = ExtResource("2_qxrlw")
@@ -562,6 +524,11 @@ sources/0 = SubResource("TileSetAtlasSource_7nbq1")
 sources/1 = SubResource("TileSetAtlasSource_fkdbe")
 sources/3 = SubResource("TileSetAtlasSource_vm72l")
 
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
+
+[sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_vm72l"]
+distance = -57.0
+
 [node name="Game" type="Node2D"]
 
 [node name="GameManager" type="Node" parent="."]
@@ -592,33 +559,32 @@ position_smoothing_speed = 10.0
 [node name="CoinHolder" type="Node" parent="LevelHolder"]
 
 [node name="Coin" parent="LevelHolder/CoinHolder" instance=ExtResource("4_3dryh")]
-position = Vector2(173, -7)
+position = Vector2(-284, 60)
 
 [node name="Coin2" parent="LevelHolder/CoinHolder" instance=ExtResource("4_3dryh")]
-position = Vector2(196, -7)
+position = Vector2(-261, 60)
 
-[node name="Void" parent="LevelHolder" instance=ExtResource("5_wowpa")]
-position = Vector2(95, 68)
-damage_amount = 100
-ignore_iframes = true
-unparryable = true
+[node name="ChargeHolder" type="Node" parent="LevelHolder/CoinHolder"]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/Void"]
-shape = SubResource("WorldBoundaryShape2D_i6g32")
+[node name="Charge" parent="LevelHolder/CoinHolder/ChargeHolder" instance=ExtResource("13_iivbl")]
+position = Vector2(-327, 61)
+
+[node name="Charge2" parent="LevelHolder/CoinHolder/ChargeHolder" instance=ExtResource("13_iivbl")]
+position = Vector2(304, 34)
 
 [node name="PlatformHolder" type="Node" parent="LevelHolder"]
 
 [node name="Platform" parent="LevelHolder/PlatformHolder" instance=ExtResource("3_wrm1d")]
-position = Vector2(103, -13)
+position = Vector2(-393, 126)
 
-[node name="MovingPlatform" parent="LevelHolder/PlatformHolder" instance=ExtResource("3_wrm1d")]
-position = Vector2(287, 6)
+[node name="Platform2" parent="LevelHolder/PlatformHolder" instance=ExtResource("3_wrm1d")]
+position = Vector2(416, -10)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="LevelHolder/PlatformHolder/MovingPlatform"]
-libraries = {
-&"": SubResource("AnimationLibrary_wowpa")
-}
-autoplay = "Move"
+[node name="Platform3" parent="LevelHolder/PlatformHolder" instance=ExtResource("3_wrm1d")]
+position = Vector2(464, 6)
+
+[node name="Platform4" parent="LevelHolder/PlatformHolder" instance=ExtResource("3_wrm1d")]
+position = Vector2(448, -26)
 
 [node name="TileMapHolder" type="Node" parent="LevelHolder"]
 
@@ -648,36 +614,59 @@ tile_set = SubResource("TileSet_3dryh")
 [node name="MID" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap"]
 z_index = -1
 position = Vector2(0, -110)
-tile_map_data = PackedByteArray("AAD8/wcAAAAEAAAAAAD8/wgAAAABAAAAAAD8/wkAAAABAAAAAAD8/woAAAABAAAAAAD9/wcAAAAEAAAAAAD9/wgAAAABAAAAAAD9/wkAAAABAAAAAAD9/woAAAABAAAAAAD+/wcAAAAEAAAAAAD+/wgAAAADAAAAAAD+/wkAAAABAAAAAAD+/woAAAABAAAAAAD//wcAAAAEAAAAAAD//wgAAAABAAAAAAD//wkAAAABAAAAAAD//woAAAABAAAAAAAAAAcAAAAEAAAAAAAAAAgAAAAEAAAAAAAAAAkAAAABAAAAAAAAAAoAAAABAAAAAAABAAcAAAAEAAAAAAABAAgAAAAEAAAAAAABAAkAAAABAAAAAAABAAoAAAABAAAAAAACAAcAAAAEAAAAAAACAAgAAAABAAAAAAACAAkAAAABAAAAAAACAAoAAAADAAAAAAADAAcAAAAEAAAAAAADAAgAAQAAAAAAAAADAAkAAAAEAAAAAAADAAoAAAABAAAAAAAEAAcAAAAEAAAAAAAEAAgAAQAAAAAAAAAEAAkAAQAAAAAAAAAEAAoAAAAEAAAAAAAFAAcAAAAEAAAAAAAFAAgAAgAAAAAAAAAFAAkAAQAAAAAAAAAFAAoAAAAEAAAAAAAGAAcAAAAEAAAAAAAGAAgAAQAAAAAAAAAGAAkAAAAEAAAAAAAGAAoAAAABAAAAAAAHAAcAAAAEAAAAAAAHAAgAAAABAAAAAAAHAAkAAAABAAAAAAAHAAoAAAABAAAAAAAIAAcAAAAEAAAAAAAIAAgAAAADAAAAAAAIAAkAAAABAAAAAAAIAAoAAAABAAAAAAAJAAcAAAAEAAAAAAAJAAgAAAABAAAAAAAJAAkAAAAEAAAAAAAJAAoAAAABAAAAAAAKAAgAAAABAAAAAAAKAAkAAAAEAAAAAAAKAAoAAAABAAAAAAALAAgAAAABAAAAAAALAAkAAAAEAAAAAAALAAoAAAABAAAAAAAMAAgAAAABAAAAAAAMAAkAAAAEAAAAAAAUAAgAAAABAAAAAAAUAAkAAAABAAAAAAAUAAoAAAABAAAAAAAVAAgAAAAEAAAAAAAVAAkAAAABAAAAAAAVAAoAAAABAAAAAAAWAAgAAAAEAAAAAAAWAAkAAAAEAAAAAAAWAAoAAAABAAAAAAAXAAgAAAABAAAAAAAXAAkAAAAEAAAAAAAXAAoAAAABAAAAAAAYAAgAAAABAAAAAAAYAAkAAAAEAAAAAAAYAAoAAAABAAAAAAAZAAgAAAABAAAAAAAZAAkAAAABAAAAAAAZAAoAAAABAAAAAAAaAAgAAAABAAAAAAAaAAkAAAABAAAAAAAaAAoAAAABAAAAAAAbAAgAAAABAAAAAAAbAAkAAAABAAAAAAAbAAoAAAABAAAAAAAcAAgAAAABAAAAAAAcAAkAAAABAAAAAAAcAAoAAQAAAAAAAAAdAAgAAAABAAAAAAAdAAkAAQAAAAAAAAAdAAoAAgAAAAAAAAAeAAgAAAADAAAAAAAeAAkAAQAAAAAAAAAeAAoAAQAAAAAAAAAfAAgAAQAAAAAAAAAfAAkAAQAAAAAAAAAfAAoAAAAEAAAAAAAgAAgAAQAAAAAAAAAgAAkAAQAAAAAAAAAgAAoAAAAEAAAAAAAhAAgAAQAAAAAAAAAhAAkAAQAAAAAAAAAhAAoAAAAEAAAAAAAiAAgAAgAAAAAAAAAiAAkAAQAAAAAAAAAiAAoAAAAEAAAAAAAjAAgAAQAAAAAAAAAjAAkAAAAEAAAAAAAjAAoAAAABAAAAAAAkAAgAAAABAAAAAAAkAAkAAAABAAAAAAAkAAoAAAABAAAAAAAlAAgAAAABAAAAAAAlAAkAAAADAAAAAAAlAAoAAAABAAAAAAAmAAgAAAADAAAAAAAmAAkAAAADAAAAAAAmAAoAAAABAAAAAAAMAAoAAAABAAAAAAAKAAcAAAAEAAAAAAALAAcAAAAEAAAAAAAMAAcAAAAEAAAAAAAUAAcAAAAEAAAAAAAVAAcAAAAEAAAAAAAWAAcAAAAEAAAAAAAXAAcAAAAEAAAAAAAYAAcAAAAEAAAAAAAZAAcAAAAEAAAAAAAaAAcAAAABAAAAAAAbAAcAAAABAAAAAAAcAAcAAAAEAAAAAAAdAAcAAAAEAAAAAAAeAAcAAAAEAAAAAAAfAAcAAAAEAAAAAAAgAAcAAAAEAAAAAAAhAAcAAAAEAAAAAAAiAAcAAAAEAAAAAAAjAAcAAAAEAAAAAAAkAAcAAAAEAAAAAAAlAAcAAAAEAAAAAAAmAAcAAAAEAAAAAAAaAAYAAAABAAAAAAAbAAYAAAABAAAAAAAbAAUAAAABAAAAAAAaAAUAAAABAAAAAAAaAAQAAAABAAAAAAAaAAMAAAABAAAAAAAbAAMAAAABAAAAAAAbAAQAAAABAAAAAAAaAAIAAAABAAAAAAAaAAEAAAAEAAAAAAAbAAEAAAAEAAAAAAAbAAIAAAABAAAAAAA=")
+tile_map_data = PackedByteArray("AAD8/wcAAAAEAAAAAAD9/wcAAAAEAAAAAAD+/wcAAAAEAAAAAAD//wcAAAAEAAAAAAAAAAcAAAAEAAAAAAABAAcAAAAEAAAAAAACAAcAAAAEAAAAAAADAAcAAAAEAAAAAAAEAAgAAAAEAAAAAAAFAAgAAAAEAAAAAAAGAAgAAAAEAAAAAAAHAAgAAAAEAAAAAAAIAAgAAAAEAAAAAAAJAAgAAAAEAAAAAAAKAAgAAAAEAAAAAAAOAAcAAAAEAAAAAAAPAAcAAAAEAAAAAAAQAAcAAAAEAAAAAAARAAcAAAAEAAAAAAASAAcAAAAEAAAAAAATAAcAAAAEAAAAAAALAAgAAAAEAAAAAAAMAAgAAAAEAAAAAAANAAgAAAAEAAAAAAD8/wgAAAABAAAAAAD8/wkAAAABAAAAAAD8/woAAAABAAAAAAD9/wgAAAABAAAAAAD9/wkAAAABAAAAAAD9/woAAAABAAAAAAD+/wgAAAABAAAAAAD+/wkAAAABAAAAAAD+/woAAAABAAAAAAD//wgAAAABAAAAAAD//wkAAQAAAAAAAAD//woAAAABAAAAAAAAAAgAAAABAAAAAAAAAAkAAQAAAAAAAAAAAAoAAAABAAAAAAABAAgAAQAAAAAAAAABAAkAAgAAAAAAAAABAAoAAAABAAAAAAACAAgAAQAAAAAAAAACAAkAAAABAAAAAAACAAoAAAABAAAAAAADAAgAAAABAAAAAAADAAkAAAABAAAAAAADAAoAAAABAAAAAAAEAAkAAAABAAAAAAAEAAoAAAABAAAAAAAFAAkAAAABAAAAAAAFAAoAAAABAAAAAAAGAAkAAAABAAAAAAAGAAoAAAABAAAAAAAHAAkAAAABAAAAAAAHAAoAAAABAAAAAAAIAAkAAAABAAAAAAAIAAoAAAABAAAAAAAJAAkAAAABAAAAAAAJAAoAAAABAAAAAAAKAAkAAAABAAAAAAAKAAoAAAABAAAAAAALAAkAAAABAAAAAAALAAoAAAABAAAAAAAMAAkAAAABAAAAAAAMAAoAAAABAAAAAAANAAkAAAABAAAAAAANAAoAAgAAAAAAAAAOAAgAAAABAAAAAAAOAAkAAQAAAAAAAAAOAAoAAQAAAAAAAAAPAAgAAAABAAAAAAAPAAkAAQAAAAAAAAAPAAoAAQAAAAAAAAAQAAgAAgAAAAAAAAAQAAkAAQAAAAAAAAAQAAoAAAABAAAAAAARAAgAAAABAAAAAAARAAkAAQAAAAAAAAARAAoAAAABAAAAAAASAAgAAQAAAAAAAAASAAkAAQAAAAAAAAASAAoAAAABAAAAAAATAAgAAQAAAAAAAAATAAkAAQAAAAAAAAATAAoAAAABAAAAAAAYAAkAAAAEAAAAAAAXAAkAAAAEAAAAAAAZAAkAAAAEAAAAAAAaAAkAAAAEAAAAAAAbAAkAAAAEAAAAAAAXAAoAAAABAAAAAAAYAAoAAAABAAAAAAAZAAoAAAABAAAAAAAaAAoAAAABAAAAAAAbAAoAAAABAAAAAAAcAAoAAAABAAAAAAAdAAoAAAABAAAAAAAeAAoAAAADAAAAAAAfAAoAAAABAAAAAAAgAAoAAAABAAAAAAAhAAoAAAABAAAAAAAiAAoAAAABAAAAAAAcAAkAAAABAAAAAAAdAAkAAAABAAAAAAAeAAkAAAABAAAAAAAfAAkAAAABAAAAAAAgAAkAAAABAAAAAAAhAAkAAAABAAAAAAAiAAkAAAABAAAAAAAcAAgAAAAEAAAAAAAdAAgAAAAEAAAAAAAeAAgAAAAEAAAAAAAfAAgAAAAEAAAAAAAgAAgAAAABAAAAAAAhAAgAAAABAAAAAAAiAAgAAQAAAAAAAAAgAAcAAAABAAAAAAAhAAcAAQAAAAAAAAAhAAYAAQAAAAAAAAAiAAYAAgAAAAAAAAAiAAUAAQAAAAAAAAAjAAUAAQAAAAAAAAAjAAQAAAABAAAAAAAkAAQAAAABAAAAAAAlAAQAAAAEAAAAAAAgAAYAAAABAAAAAAAgAAUAAAABAAAAAAAgAAQAAAABAAAAAAAgAAMAAAAEAAAAAAAhAAMAAAAEAAAAAAAiAAMAAAAEAAAAAAAjAAMAAAAEAAAAAAAkAAMAAAAEAAAAAAAlAAUAAAADAAAAAAAlAAYAAAABAAAAAAAlAAcAAAABAAAAAAAmAAcAAAAEAAAAAAAmAAgAAAABAAAAAAAmAAkAAAABAAAAAAAnAAkAAAAEAAAAAAAnAAoAAAAEAAAAAAAmAAoAAAABAAAAAAAlAAoAAQAAAAAAAAAkAAoAAQAAAAAAAAAjAAoAAAABAAAAAAAjAAkAAAABAAAAAAAiAAcAAQAAAAAAAAAhAAUAAAABAAAAAAAhAAQAAAADAAAAAAAiAAQAAAABAAAAAAAjAAYAAQAAAAAAAAAkAAUAAAABAAAAAAAkAAYAAQAAAAAAAAAkAAcAAQAAAAAAAAAkAAgAAgAAAAAAAAAkAAkAAQAAAAAAAAAjAAgAAQAAAAAAAAAjAAcAAQAAAAAAAAAlAAgAAAABAAAAAAAlAAkAAQAAAAAAAAAcAAcAAQAAAAAAAAAdAAcAAQAAAAAAAAAaAAYAAQAAAAAAAAAaAAcAAgAAAAAAAAAaAAgAAQAAAAAAAAAZAAgAAQAAAAAAAAAZAAcAAQAAAAAAAAAZAAYAAQAAAAAAAAAbAAUAAQAAAAAAAAAbAAYAAQAAAAAAAAAbAAcAAQAAAAAAAAAbAAgAAQAAAAAAAAAcAAUAAQAAAAAAAAAcAAYAAQAAAAAAAAAfAAQAAAAEAAAAAAAeAAQAAAAEAAAAAAAfAAUAAAABAAAAAAA=")
 tile_set = SubResource("TileSet_7t8sx")
 
 [node name="MIDB" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap"]
 position = Vector2(0, -110)
-tile_map_data = PackedByteArray("AAACAAYAAAAHAAAAAAAJAAYAAAAHAAAAAAAEAAYAAAAGAAAAAAAFAAYAAAAGAAAAAAD//wYAAAAIAAAAAAD+/wYAAAAIAAAAAAAHAAYAAAAJAAAAAAALAAYAAAAKAAAAAAABAAYAAAAKAAAAAAD8/wYAAAALAAAAAAAIAAYAAQAAAAAAAAAVAAYAAQAAAAAAAAAWAAYAAQABAAAAAAAfAAUAAwACAAAAAAAhAAUAAwAEAAAAAAAjAAUAAwAGAAAAAAAdAAUAAwAAAAEAAAAdAAYAAwAAAAIAAAA=")
+tile_map_data = PackedByteArray("AAABAAkAAQAAAAAAAAASAAkAAQAAAAAAABARAAkAAQABAAAAABACAAgAAAAIAAAAAAD//wkAAAAIAAAAAAAQAAUAAwACAAAAAAD9/wUAAwAGAAAAAAAIAAcAAAAGAAAAAAASAAYAAAAHAAAAAAAOAAYAAAALAAAAAAAAAAYAAAAJAAAAAAABAAYAAAAIAAAAAAAJAAYAAwACAAAAAAA=")
 tile_set = SubResource("TileSet_exi56")
 
-[node name="MIDB2" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap/MIDB"]
-position = Vector2(-8, 41)
-tile_map_data = PackedByteArray("AAD//wYAAQACAAAAAAAbAAEAAQACAAAAAAAbAP//AQACAAAAAAA=")
+[node name="MIDB2" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap"]
+position = Vector2(-8, -69)
+tile_map_data = PackedByteArray("AAAAAAUAAQACAAAAAAAHAAcAAQACAAAAAAAKAAYAAQACAAAAAAASAAUAAQACAAAAAAAcAAMAAQACAAAAAAAgAAcAAQACAAAAAAAjAAQAAQACAAAAAAAmAAYAAQACAAAAAAAaAAUAAQACAAAAAAA=")
 tile_set = SubResource("TileSet_exi56")
 
 [node name="EnemyHolder" type="Node" parent="LevelHolder"]
 
 [node name="Clover" parent="LevelHolder/EnemyHolder" instance=ExtResource("6_i6g32")]
-position = Vector2(444, 15)
+position = Vector2(-228, 5)
 vertical_movement_enabled = false
 circular_movement_enabled = true
 
 [node name="Acopter" parent="LevelHolder/EnemyHolder" instance=ExtResource("16_nnt18")]
-position = Vector2(391, -21)
+position = Vector2(-281, -31)
+facing_left = true
 vertical_distance = 20.0
 vertical_speed = 50.0
 
 [node name="Beamer" parent="LevelHolder/EnemyHolder" instance=ExtResource("10_ewbju")]
-position = Vector2(245, -7)
+position = Vector2(-427, -17)
 
-[node name="Vine" parent="LevelHolder" instance=ExtResource("18_85qyi")]
-position = Vector2(-95, -87)
+[node name="SpikeHolder" type="Node" parent="LevelHolder/EnemyHolder"]
+
+[node name="Spikes" parent="LevelHolder/EnemyHolder/SpikeHolder" instance=ExtResource("16_22asu")]
+position = Vector2(85, 15)
+
+[node name="Spike" parent="LevelHolder/EnemyHolder/SpikeHolder" instance=ExtResource("17_fkdbe")]
+position = Vector2(216, 14)
+
+[node name="Spike2" parent="LevelHolder/EnemyHolder/SpikeHolder" instance=ExtResource("17_fkdbe")]
+position = Vector2(203, 14)
+
+[node name="MovementHolder" type="Node" parent="LevelHolder"]
+
+[node name="ZiplineHolder" type="Node" parent="LevelHolder/MovementHolder"]
+
+[node name="Zipline" parent="LevelHolder/MovementHolder/ZiplineHolder" instance=ExtResource("25_22asu")]
+position = Vector2(-252, -102)
+zipline_speed = 175.0
+end_point = Vector2(100, 0)
+
+[node name="VineHolder" type="Node" parent="LevelHolder/MovementHolder"]
+
+[node name="Vine" parent="LevelHolder/MovementHolder/VineHolder" instance=ExtResource("18_85qyi")]
+position = Vector2(-103, -105)
 vine_length = 70.0
 swing_force = 1.0
 grab_range = 5.0
@@ -688,6 +677,23 @@ remove_end_segments = 3
 approach_detection_radius = 125.0
 vine_bend_compensation = 1.0
 segment_curve_intensity = 1.0
+
+[node name="BarrierHolder" type="Node" parent="LevelHolder"]
+
+[node name="Void" parent="LevelHolder/BarrierHolder" instance=ExtResource("5_wowpa")]
+position = Vector2(95, 68)
+damage_amount = 100
+ignore_iframes = true
+unparryable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/BarrierHolder/Void"]
+shape = SubResource("WorldBoundaryShape2D_i6g32")
+
+[node name="LeftWorldBorder" type="StaticBody2D" parent="LevelHolder/BarrierHolder"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LevelHolder/BarrierHolder/LeftWorldBorder"]
+rotation = 1.5708
+shape = SubResource("WorldBoundaryShape2D_vm72l")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -723,11 +729,3 @@ expand_mode = 2
 layout_mode = 2
 texture = ExtResource("9_h4fw4")
 expand_mode = 2
-
-[node name="Charge" parent="." instance=ExtResource("13_iivbl")]
-position = Vector2(106, -33)
-
-[node name="Zipline" parent="." instance=ExtResource("25_22asu")]
-position = Vector2(67, -25)
-zipline_speed = 175.0
-end_point = Vector2(100, 0)
