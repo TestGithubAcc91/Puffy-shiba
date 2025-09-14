@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://do8wyc3dyl3gv"]
+
+[ext_resource type="Script" uid="uid://cks5f2cx5mqmu" path="res://Scripts/zipline.gd" id="1_h6mey"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ulrhc"]
+
+[node name="Zipline" type="Node2D"]
+script = ExtResource("1_h6mey")
+
+[node name="Line2D" type="Line2D" parent="."]
+
+[node name="StartArea" type="Area2D" parent="."]
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartArea"]
+shape = SubResource("CircleShape2D_ulrhc")
+
+[node name="EndArea" type="Area2D" parent="."]
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="EndArea"]
+shape = SubResource("CircleShape2D_ulrhc")

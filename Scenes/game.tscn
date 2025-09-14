@@ -1,4 +1,4 @@
-[gd_scene load_steps=43 format=4 uid="uid://dtcx6xj2og0ed"]
+[gd_scene load_steps=44 format=4 uid="uid://dtcx6xj2og0ed"]
 
 [ext_resource type="PackedScene" uid="uid://bkfnr4qat1ah0" path="res://Scenes/player.tscn" id="1_ebmjs"]
 [ext_resource type="Script" uid="uid://dhsvca8cpqgb8" path="res://Scripts/game_manager.gd" id="1_v158k"]
@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" uid="uid://beodtqr1g8lyc" path="res://Scenes/charge.tscn" id="13_iivbl"]
 [ext_resource type="PackedScene" uid="uid://c5dckssmfxqgb" path="res://Scenes/acopter.tscn" id="16_nnt18"]
 [ext_resource type="PackedScene" uid="uid://do0b3q7js88n6" path="res://Scenes/vine.tscn" id="18_85qyi"]
+[ext_resource type="PackedScene" uid="uid://do8wyc3dyl3gv" path="res://Scenes/zipline.tscn" id="25_22asu"]
 
 [sub_resource type="WorldBoundaryShape2D" id="WorldBoundaryShape2D_i6g32"]
 
@@ -656,9 +657,9 @@ position = Vector2(0, -110)
 tile_map_data = PackedByteArray("AAACAAYAAAAHAAAAAAAJAAYAAAAHAAAAAAAEAAYAAAAGAAAAAAAFAAYAAAAGAAAAAAD//wYAAAAIAAAAAAD+/wYAAAAIAAAAAAAHAAYAAAAJAAAAAAALAAYAAAAKAAAAAAABAAYAAAAKAAAAAAD8/wYAAAALAAAAAAAIAAYAAQAAAAAAAAAVAAYAAQAAAAAAAAAWAAYAAQABAAAAAAAfAAUAAwACAAAAAAAhAAUAAwAEAAAAAAAjAAUAAwAGAAAAAAAdAAUAAwAAAAEAAAAdAAYAAwAAAAIAAAA=")
 tile_set = SubResource("TileSet_exi56")
 
-[node name="MIDB2" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap"]
-position = Vector2(-8, -69)
-tile_map_data = PackedByteArray("AAD//wYAAQACAAAAAAA=")
+[node name="MIDB2" type="TileMapLayer" parent="LevelHolder/TileMapHolder/NewMap/MIDB"]
+position = Vector2(-8, 41)
+tile_map_data = PackedByteArray("AAD//wYAAQACAAAAAAAbAAEAAQACAAAAAAAbAP//AQACAAAAAAA=")
 tile_set = SubResource("TileSet_exi56")
 
 [node name="EnemyHolder" type="Node" parent="LevelHolder"]
@@ -737,3 +738,7 @@ expand_mode = 2
 
 [node name="Charge" parent="." instance=ExtResource("13_iivbl")]
 position = Vector2(106, -33)
+
+[node name="Zipline" parent="." instance=ExtResource("25_22asu")]
+position = Vector2(338, -28)
+end_point = Vector2(100, 0)

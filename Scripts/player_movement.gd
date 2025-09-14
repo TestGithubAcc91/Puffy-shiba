@@ -81,6 +81,12 @@ var bounce_direction_vector: Vector2 = Vector2.ZERO
 # NEW: Variable to track if this is a vine release dash
 var is_vine_release_dash: bool = false
 
+var zipline_in_range: Zipline = null
+var is_on_zipline: bool = false
+var current_zipline: Zipline = null
+var zipline_grab_position: float = 0.0
+
+
 func _ready():
 	health_script.died.connect(_on_player_died)
 	
@@ -125,27 +131,37 @@ func _physics_process(delta: float) -> void:
 	handle_movement(delta)
 
 func handle_input():
-	# Check if player is swinging on a vine
+	# Check if player is swinging on a vine OR on a zipline
 	var is_on_vine = vine_component && vine_component.is_swinging
+	var is_on_zipline_check = is_on_zipline
 	
-	# Dash - cannot be used while on vine
-	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1 and not is_on_vine:
+	# Zipline grab/release
+	if Input.is_action_just_pressed("Jump") and zipline_in_range and not is_on_vine and not is_on_zipline_check:
+		grab_zipline()
+	elif Input.is_action_just_pressed("Jump") and is_on_zipline_check:
+		release_zipline()
+	
+	# Dash - cannot be used while on vine OR zipline
+	if Input.is_action_just_pressed("Dash") and can_dash and current_parry_stacks >= 1 and not is_on_vine and not is_on_zipline_check:
 		activate_dash()
 	
-	# Regular jump - works normally
-	if Input.is_action_just_pressed("Jump") and is_on_floor():
+	# Regular jump - works normally when not on zipline
+	if Input.is_action_just_pressed("Jump") and is_on_floor() and not is_on_zipline_check:
 		velocity.y = JUMP_VELOCITY
 	
-	# High jump - cannot be used while on vine
-	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2 and not is_on_vine:
+	# High jump - cannot be used while on vine OR zipline
+	if Input.is_action_just_pressed("HighJump") and is_on_floor() and can_high_jump and current_parry_stacks >= 2 and not is_on_vine and not is_on_zipline_check:
 		activate_high_jump()
 	
-	# Parry - works normally
-	if Input.is_action_just_pressed("Parry") and can_parry:
+	# Parry - works normally when not on zipline
+	if Input.is_action_just_pressed("Parry") and can_parry and not is_on_zipline_check:
 		activate_parry()
 
+# Add this to your handle_movement() function
 func handle_movement(delta: float):
-	if is_dashing:
+	if is_on_zipline:
+		handle_zipline_movement(delta)
+	elif is_dashing:
 		handle_dash_movement(delta)
 	elif is_bouncing:
 		handle_bounce_movement(delta)
@@ -212,7 +228,7 @@ func handle_normal_movement(delta: float):
 	move_and_slide()
 
 func get_effective_horizontal_input() -> float:
-	if vine_component and vine_component.is_swinging and vine_component.inputs_blocked:
+	if (vine_component and vine_component.is_swinging and vine_component.inputs_blocked) or is_on_zipline:
 		return 0.0
 	return Input.get_axis("Move_Left", "Move_Right")
 
@@ -491,6 +507,13 @@ func _on_player_died():
 	is_in_pre_freeze_parry = false
 	is_vine_release_dash = false
 	
+	
+	if is_on_zipline and current_zipline:
+		current_zipline.release_player()
+		is_on_zipline = false
+		current_zipline = null
+		zipline_in_range = null
+	
 	for timer in [parry_timer, parry_cooldown_timer, parry_freeze_timer, parry_pre_freeze_timer, dash_timer, dash_cooldown_timer, bounce_timer]:
 		timer.stop()
 	
@@ -517,3 +540,46 @@ func grab_vine(vine: Vine):
 	if vine.player_in_grab_area and has_node("VineComponent"):
 		print("Player attempting to grab vine through VineComponent")
 		$VineComponent.grab_vine(vine)
+
+func handle_zipline_movement(delta: float):
+	# Movement is handled by the zipline itself
+	# Just update animations
+	if current_zipline:
+		var zipline_dir = current_zipline.get_zipline_direction_vector()
+		update_sprite_direction(zipline_dir.x)
+		animated_sprite.play("Jump")  # Or create a specific zipline animation
+	move_and_slide()
+
+func grab_zipline():
+	if not zipline_in_range:
+		return false
+	
+	if zipline_in_range.grab_player(self, zipline_grab_position):
+		is_on_zipline = true
+		current_zipline = zipline_in_range
+		# Stop any current movement
+		if is_dashing:
+			end_dash()
+		return true
+	return false
+
+func release_zipline():
+	if not is_on_zipline or not current_zipline:
+		return
+	
+	# Perform a dash-like release if player has charges
+	if current_parry_stacks >= 1:
+		# Get zipline direction and use it for a release dash
+		var zipline_dir = current_zipline.get_zipline_direction_vector()
+		
+		# Release from zipline first
+		current_zipline.release_player()
+		is_on_zipline = false
+		current_zipline = null
+		
+
+	else:
+		# Simple release without dash
+		current_zipline.release_player()
+		is_on_zipline = false
+		current_zipline = null
