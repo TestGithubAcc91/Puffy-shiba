@@ -25,6 +25,8 @@ var is_parrying: bool = false
 var parry_cooldown_timer: Timer
 var can_parry: bool = true
 var parry_was_successful: bool = false
+# NEW: Track if player was already invulnerable before parry
+var was_invulnerable_before_parry: bool = false
 
 # Parry freeze variables
 var parry_freeze_timer: Timer
@@ -327,6 +329,9 @@ func activate_parry():
 	if not can_parry:
 		return
 	
+	# Store the invulnerability state before parry
+	was_invulnerable_before_parry = health_script.is_invulnerable
+	
 	is_parrying = true
 	can_parry = false
 	parry_was_successful = false
@@ -494,17 +499,32 @@ func assign_empty_texture_to_sprite(index: int):
 
 # Timer callbacks
 func _on_parry_timeout():
-	health_script.is_invulnerable = false
+	# Only disable invulnerability if the player wasn't already invulnerable before the parry
+	# This applies to both successful parries and failed parries (including unparryables)
+	if not was_invulnerable_before_parry:
+		health_script.is_invulnerable = false
+	
 	if glint_sprite:
 		glint_sprite.visible = false
 		glint_sprite.stop()
-	last_attack_was_unparryable = false
+	
+	# Handle parry failure (including unparryables)
 	if not parry_was_successful:
 		is_parrying = false
 		parry_cooldown_timer.wait_time = parry_fail_cooldown
 		parry_cooldown_timer.start()
+		
+		# If this was an unparryable attack and player was already invulnerable,
+		# they should remain invulnerable (no additional damage taken)
+		if last_attack_was_unparryable and was_invulnerable_before_parry:
+			# Keep invulnerability active - don't change health_script.is_invulnerable
+			pass
 	else:
 		can_parry = true
+	
+	# Reset flags for next parry
+	last_attack_was_unparryable = false
+	was_invulnerable_before_parry = false
 
 func _on_parry_cooldown_timeout():
 	can_parry = true
@@ -538,6 +558,11 @@ func _on_high_jump_cooldown_timeout():
 
 func set_last_attack_unparryable(unparryable: bool):
 	last_attack_was_unparryable = unparryable
+	
+	# ADDITIONAL PROTECTION: If setting an attack as unparryable and player is currently parrying
+	# while already being invulnerable, ensure they stay invulnerable
+	if unparryable and is_parrying and was_invulnerable_before_parry:
+		health_script.is_invulnerable = true
 
 func _on_player_died():
 	is_parrying = false

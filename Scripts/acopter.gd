@@ -12,7 +12,7 @@ var fire_timer: Timer
 var animated_sprite: AnimatedSprite2D
 var initial_position: Vector2
 var moving_up: bool = true
-var is_active: bool = true  # NEW: Flag to control helicopter activity
+var is_active: bool = true  # Flag to control helicopter activity
 
 func _ready():
 	# Store the initial position for vertical movement reference
@@ -31,7 +31,7 @@ func _ready():
 	fire_timer.timeout.connect(_on_fire_timer_timeout)
 	add_child(fire_timer)
 	
-	# NEW: Connect to player's death signal if available
+	# Connect to player's death signal if available
 	connect_to_player_signals()
 
 func connect_to_player_signals():
@@ -123,8 +123,13 @@ func start_shooting_sequence():
 	# Play the "Shoot" animation
 	animated_sprite.play("Shoot")
 	
+	# FIXED: Check if tree exists before creating timer
+	var tree = get_tree()
+	if not tree or not is_active:
+		return
+	
 	# Wait 0.2 seconds before spawning the acorn
-	await get_tree().create_timer(0.2).timeout
+	await tree.create_timer(0.2).timeout
 	
 	# Check if still active after await
 	if not is_active:
@@ -132,8 +137,13 @@ func start_shooting_sequence():
 		
 	spawn_acorn()
 	
+	# FIXED: Check tree again after first await
+	tree = get_tree()
+	if not tree or not is_active:
+		return
+	
 	# Wait another 0.2 seconds after spawning
-	await get_tree().create_timer(0.2).timeout
+	await tree.create_timer(0.2).timeout
 	
 	# Check if still active after await
 	if not is_active or not is_instance_valid(animated_sprite):
@@ -168,14 +178,14 @@ func spawn_acorn():
 		if acorn.has_method("set_direction"):
 			acorn.set_direction(facing_left)
 
-# NEW: Method to manually stop helicopter (can be called from other scripts)
+# Method to manually stop helicopter (can be called from other scripts)
 func stop_helicopter():
 	is_active = false
 	fire_timer.stop()
 	if animated_sprite:
 		animated_sprite.stop()
 
-# NEW: Method to resume helicopter activity
+# Method to resume helicopter activity
 func resume_helicopter():
 	is_active = true
 	fire_timer.start()
