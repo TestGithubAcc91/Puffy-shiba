@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://bck8lw4sj2ly6"]
+
+[ext_resource type="Script" uid="uid://cojgak2pyu7c6" path="res://Scripts/level_select_menu.gd" id="1_52mtt"]
+[ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="1_271b8"]
+
+[node name="LevelSelectMenu" type="Node2D"]
+script = ExtResource("1_52mtt")
+
+[node name="Label" type="Label" parent="."]
+offset_top = 1.0
+offset_right = 209.0
+offset_bottom = 115.0
+theme_override_colors/font_color = Color(0.88184, 0.380642, 0.371091, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("1_271b8")
+theme_override_font_sizes/font_size = 7
+text = "LEVEL SELECT"
+horizontal_alignment = 1
+
+[node name="Level1Button" type="Button" parent="."]
+offset_left = 66.0
+offset_top = 24.0
+offset_right = 82.0
+offset_bottom = 40.0
+
+[node name="Button2" type="Button" parent="."]
+offset_left = 96.0
+offset_top = 24.0
+offset_right = 112.0
+offset_bottom = 40.0
+
+[node name="Button3" type="Button" parent="."]
+offset_left = 125.0
+offset_top = 24.0
+offset_right = 141.0
+offset_bottom = 40.0
+
+[node name="Camera2D" type="Camera2D" parent="."]

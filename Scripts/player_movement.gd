@@ -499,11 +499,7 @@ func assign_empty_texture_to_sprite(index: int):
 
 # Timer callbacks
 func _on_parry_timeout():
-	# Only disable invulnerability if the player wasn't already invulnerable before the parry
-	# This applies to both successful parries and failed parries (including unparryables)
-	if not was_invulnerable_before_parry:
-		health_script.is_invulnerable = false
-	
+	# Hide parry visual effects
 	if glint_sprite:
 		glint_sprite.visible = false
 		glint_sprite.stop()
@@ -514,12 +510,17 @@ func _on_parry_timeout():
 		parry_cooldown_timer.wait_time = parry_fail_cooldown
 		parry_cooldown_timer.start()
 		
-		# If this was an unparryable attack and player was already invulnerable,
-		# they should remain invulnerable (no additional damage taken)
-		if last_attack_was_unparryable and was_invulnerable_before_parry:
-			# Keep invulnerability active - don't change health_script.is_invulnerable
-			pass
+		# CRITICAL FIX: Only disable invulnerability if:
+		# 1. Player wasn't already invulnerable before the parry AND
+		# 2. This wasn't an unparryable attack (which should maintain iframes from damage)
+		if not was_invulnerable_before_parry and not last_attack_was_unparryable:
+			health_script.is_invulnerable = false
+		# If it was unparryable, the damage system has already handled iframes appropriately
+		# If player was already invulnerable, maintain that state
 	else:
+		# Successful parry - only disable invulnerability if player wasn't already invulnerable
+		if not was_invulnerable_before_parry:
+			health_script.is_invulnerable = false
 		can_parry = true
 	
 	# Reset flags for next parry
