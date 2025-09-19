@@ -24,6 +24,8 @@ func _on_level_selected(level_number):
 		1:
 			current_level_scene = preload("res://Scenes/level_1_holder.tscn").instantiate()
 			add_child(current_level_scene)
+		
+		# Add more levels as needed
 
 func return_to_menu():
 	if current_level_scene:

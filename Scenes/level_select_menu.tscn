@@ -1,38 +1,108 @@
-[gd_scene load_steps=3 format=3 uid="uid://bck8lw4sj2ly6"]
+[gd_scene load_steps=11 format=3 uid="uid://bck8lw4sj2ly6"]
 
 [ext_resource type="Script" uid="uid://cojgak2pyu7c6" path="res://Scripts/level_select_menu.gd" id="1_52mtt"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="1_271b8"]
+[ext_resource type="Texture2D" uid="uid://baw6j43r5bsqr" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevel.png" id="3_aljgx"]
+[ext_resource type="Texture2D" uid="uid://bpbqfl4qhtu3t" path="res://Assets/sprites/PlayerGUI/GeneralGUI/puffyLogo.png" id="4_vowso"]
+[ext_resource type="Texture2D" uid="uid://0emvtq61p7x0" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevelSelect.png" id="5_hstaq"]
+[ext_resource type="Texture2D" uid="uid://cqkm2s6d4nm6" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevelHover.png" id="6_16w6l"]
+[ext_resource type="Texture2D" uid="uid://c4iwwwklkbaer" path="res://Assets/sprites/PlayerGUI/GeneralGUI/GreenLevel/greenButton.png" id="8_461nm"]
+[ext_resource type="Texture2D" uid="uid://fxag7o0s0xak" path="res://Assets/sprites/PlayerGUI/GeneralGUI/GreenLevel/greenButtonSelect.png" id="9_ube50"]
+[ext_resource type="Texture2D" uid="uid://c7xrjmuinukls" path="res://Assets/sprites/PlayerGUI/GeneralGUI/GreenLevel/greenButtonHover.png" id="10_yts2j"]
+[ext_resource type="BitMap" uid="uid://bb7g1utteh3sf" path="res://Assets/sprites/PlayerGUI/GeneralGUI/buttonMask.png" id="11_ube50"]
 
 [node name="LevelSelectMenu" type="Node2D"]
 script = ExtResource("1_52mtt")
 
 [node name="Label" type="Label" parent="."]
+offset_left = -91.0
 offset_top = 1.0
-offset_right = 209.0
+offset_right = 118.0
 offset_bottom = 115.0
-theme_override_colors/font_color = Color(0.88184, 0.380642, 0.371091, 1)
+scale = Vector2(1.5, 1.5)
+theme_override_colors/font_color = Color(0.998476, 0, 0.199601, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_fonts/font = ExtResource("1_271b8")
 theme_override_font_sizes/font_size = 7
-text = "LEVEL SELECT"
+text = "LE
+"
 horizontal_alignment = 1
 
-[node name="Level1Button" type="Button" parent="."]
-offset_left = 66.0
-offset_top = 24.0
-offset_right = 82.0
-offset_bottom = 40.0
+[node name="Label2" type="Label" parent="Label"]
+offset_left = 17.3333
+offset_top = 0.666667
+offset_right = 226.333
+offset_bottom = 114.667
+theme_override_colors/font_color = Color(1, 0.8, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("1_271b8")
+theme_override_font_sizes/font_size = 7
+text = "VEL"
+horizontal_alignment = 1
 
-[node name="Button2" type="Button" parent="."]
-offset_left = 96.0
-offset_top = 24.0
-offset_right = 112.0
-offset_bottom = 40.0
+[node name="Label3" type="Label" parent="Label"]
+offset_left = 46.0
+offset_top = -0.666667
+offset_right = 255.0
+offset_bottom = 113.333
+theme_override_colors/font_color = Color(0.344698, 0.820974, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("1_271b8")
+theme_override_font_sizes/font_size = 7
+text = "SEL"
+horizontal_alignment = 1
 
-[node name="Button3" type="Button" parent="."]
-offset_left = 125.0
-offset_top = 24.0
-offset_right = 141.0
-offset_bottom = 40.0
+[node name="Label4" type="Label" parent="Label"]
+offset_left = 67.0
+offset_right = 276.0
+offset_bottom = 114.0
+theme_override_colors/font_color = Color(0, 0.85, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = ExtResource("1_271b8")
+theme_override_font_sizes/font_size = 7
+text = "ECT"
+horizontal_alignment = 1
 
 [node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(106, 50)
+zoom = Vector2(5, 5)
+limit_left = -1000000
+
+[node name="PuffyLogo" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.254902)
+position = Vector2(45, 70)
+rotation = -0.152009
+scale = Vector2(2.5, 2.5)
+texture = ExtResource("4_vowso")
+
+[node name="Level1Button" type="TextureButton" parent="."]
+offset_left = 78.0
+offset_right = 126.0
+offset_bottom = 48.0
+scale = Vector2(1.5, 1.5)
+texture_normal = ExtResource("8_461nm")
+texture_pressed = ExtResource("9_ube50")
+texture_hover = ExtResource("10_yts2j")
+texture_click_mask = ExtResource("11_ube50")
+
+[node name="LockedButton" type="TextureButton" parent="."]
+offset_left = 78.0
+offset_top = 25.0
+offset_right = 126.0
+offset_bottom = 73.0
+scale = Vector2(1.5, 1.5)
+texture_normal = ExtResource("3_aljgx")
+texture_pressed = ExtResource("5_hstaq")
+texture_hover = ExtResource("6_16w6l")
+texture_click_mask = ExtResource("11_ube50")
+
+[node name="LockedButton2" type="TextureButton" parent="."]
+offset_left = 78.0
+offset_top = 50.0
+offset_right = 126.0
+offset_bottom = 98.0
+scale = Vector2(1.5, 1.5)
+texture_normal = ExtResource("3_aljgx")
+texture_pressed = ExtResource("5_hstaq")
+texture_hover = ExtResource("6_16w6l")
+texture_click_mask = ExtResource("11_ube50")
