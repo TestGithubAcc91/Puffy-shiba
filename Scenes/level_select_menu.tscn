@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://bck8lw4sj2ly6"]
+[gd_scene load_steps=12 format=3 uid="uid://bck8lw4sj2ly6"]
 
 [ext_resource type="Script" uid="uid://cojgak2pyu7c6" path="res://Scripts/level_select_menu.gd" id="1_52mtt"]
 [ext_resource type="FontFile" uid="uid://ckbaagqak4gj6" path="res://Assets/fonts/PixelOperator8-Bold.ttf" id="1_271b8"]
 [ext_resource type="Texture2D" uid="uid://baw6j43r5bsqr" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevel.png" id="3_aljgx"]
+[ext_resource type="Texture2D" uid="uid://dhcd06bylb8j3" path="res://Assets/sprites/PlayerGUI/GeneralGUI/GreenLevel/forestBackground.png" id="4_ube50"]
 [ext_resource type="Texture2D" uid="uid://bpbqfl4qhtu3t" path="res://Assets/sprites/PlayerGUI/GeneralGUI/puffyLogo.png" id="4_vowso"]
 [ext_resource type="Texture2D" uid="uid://0emvtq61p7x0" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevelSelect.png" id="5_hstaq"]
 [ext_resource type="Texture2D" uid="uid://cqkm2s6d4nm6" path="res://Assets/sprites/PlayerGUI/GeneralGUI/LockedLevel/lockedLevelHover.png" id="6_16w6l"]
@@ -14,11 +15,11 @@
 [node name="LevelSelectMenu" type="Node2D"]
 script = ExtResource("1_52mtt")
 
-[node name="Label" type="Label" parent="."]
-offset_left = -91.0
-offset_top = 1.0
-offset_right = 118.0
-offset_bottom = 115.0
+[node name="LevelSelect" type="Label" parent="."]
+offset_left = -204.0
+offset_top = -56.0
+offset_right = 5.0
+offset_bottom = 58.0
 scale = Vector2(1.5, 1.5)
 theme_override_colors/font_color = Color(0.998476, 0, 0.199601, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
@@ -28,7 +29,8 @@ text = "LE
 "
 horizontal_alignment = 1
 
-[node name="Label2" type="Label" parent="Label"]
+[node name="Label2" type="Label" parent="LevelSelect"]
+layout_mode = 0
 offset_left = 17.3333
 offset_top = 0.666667
 offset_right = 226.333
@@ -40,7 +42,8 @@ theme_override_font_sizes/font_size = 7
 text = "VEL"
 horizontal_alignment = 1
 
-[node name="Label3" type="Label" parent="Label"]
+[node name="Label3" type="Label" parent="LevelSelect"]
+layout_mode = 0
 offset_left = 46.0
 offset_top = -0.666667
 offset_right = 255.0
@@ -52,7 +55,8 @@ theme_override_font_sizes/font_size = 7
 text = "SEL"
 horizontal_alignment = 1
 
-[node name="Label4" type="Label" parent="Label"]
+[node name="Label4" type="Label" parent="LevelSelect"]
+layout_mode = 0
 offset_left = 67.0
 offset_right = 276.0
 offset_bottom = 114.0
@@ -64,32 +68,48 @@ text = "ECT"
 horizontal_alignment = 1
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(106, 50)
 zoom = Vector2(5, 5)
 limit_left = -1000000
 
+[node name="ForestBackground" type="Sprite2D" parent="."]
+self_modulate = Color(1, 1, 1, 0.27451)
+position = Vector2(70, 21)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("4_ube50")
+flip_h = true
+
 [node name="PuffyLogo" type="Sprite2D" parent="."]
-modulate = Color(1, 1, 1, 0.254902)
-position = Vector2(45, 70)
+modulate = Color(1, 1, 1, 0.560784)
+position = Vector2(-57, 21)
 rotation = -0.152009
 scale = Vector2(2.5, 2.5)
 texture = ExtResource("4_vowso")
 
 [node name="Level1Button" type="TextureButton" parent="."]
-offset_left = 78.0
-offset_right = 126.0
-offset_bottom = 48.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -36.0
+offset_top = -49.0
+offset_right = 12.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
 scale = Vector2(1.5, 1.5)
 texture_normal = ExtResource("8_461nm")
 texture_pressed = ExtResource("9_ube50")
 texture_hover = ExtResource("10_yts2j")
 texture_click_mask = ExtResource("11_ube50")
 
+[node name="Sprite2D" type="Sprite2D" parent="Level1Button"]
+
 [node name="LockedButton" type="TextureButton" parent="."]
-offset_left = 78.0
-offset_top = 25.0
-offset_right = 126.0
-offset_bottom = 73.0
+offset_left = -36.0
+offset_top = -24.0
+offset_right = 12.0
+offset_bottom = 24.0
 scale = Vector2(1.5, 1.5)
 texture_normal = ExtResource("3_aljgx")
 texture_pressed = ExtResource("5_hstaq")
@@ -97,10 +117,10 @@ texture_hover = ExtResource("6_16w6l")
 texture_click_mask = ExtResource("11_ube50")
 
 [node name="LockedButton2" type="TextureButton" parent="."]
-offset_left = 78.0
-offset_top = 50.0
-offset_right = 126.0
-offset_bottom = 98.0
+offset_left = -36.0
+offset_top = 1.0
+offset_right = 12.0
+offset_bottom = 49.0
 scale = Vector2(1.5, 1.5)
 texture_normal = ExtResource("3_aljgx")
 texture_pressed = ExtResource("5_hstaq")
